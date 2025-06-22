@@ -1,0 +1,23 @@
+<mapper namespace="com.yourmode.yourmodebackend.domain.user.mapper.UserMapper">
+
+    <!--이메일 중복 확인-->
+    <select id="isEmailExists" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM users WHERE email = #{email}
+    </select>
+
+    <insert id="insertUser" useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO users (email, name, phone_number, role, is_marketing_agreed, created_at)
+        VALUES (#{email}, #{name}, #{phoneNumber}, #{role}, #{isMarketingAgreed}, #{createdAt})
+    </insert>
+
+    <insert id="insertUserProfile" useGeneratedKeys="true" keyProperty="profileId">
+        INSERT INTO user_profiles (height, weight, gender, body_type_id, user_id)
+        VALUES (#{height}, #{weight}, #{gender}, #{bodyTypeId}, #{userId})
+    </insert>
+
+    <insert id="insertUserCredential" useGeneratedKeys="true" keyProperty="userCredentialId">
+        INSERT INTO user_credentials (password_hash, oauth_id, oauth_provider, user_id)
+        VALUES (#{passwordHash}, #{oauthId}, #{oauthProvider}, #{userId})
+    </insert>
+
+</mapper>
