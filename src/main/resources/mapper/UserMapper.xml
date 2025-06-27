@@ -1,3 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yourmode.yourmodebackend.domain.user.mapper.UserMapper">
 
     <!--이메일 중복 확인-->
@@ -6,8 +10,8 @@
     </select>
 
     <insert id="insertUser" useGeneratedKeys="true" keyProperty="userId">
-        INSERT INTO users (email, name, phone_number, role, is_marketing_agreed, created_at)
-        VALUES (#{email}, #{name}, #{phoneNumber}, #{role}, #{isMarketingAgreed}, #{createdAt})
+        INSERT INTO users (email, name, phone_number, role, is_terms_agreed, is_privacy_policy_agreed, is_marketing_agreed, created_at)
+        VALUES (#{email}, #{name}, #{phoneNumber}, #{role}, #{isTermsAgreed}, #{isPrivacyPolicyAgreed}, #{isMarketingAgreed}, #{createdAt})
     </insert>
 
     <insert id="insertUserProfile" useGeneratedKeys="true" keyProperty="profileId">
@@ -19,5 +23,19 @@
         INSERT INTO user_credentials (password_hash, oauth_id, oauth_provider, user_id)
         VALUES (#{passwordHash}, #{oauthId}, #{oauthProvider}, #{userId})
     </insert>
+
+    <insert id="insertUserToken" useGeneratedKeys="true" keyProperty="tokenId">
+        INSERT INTO user_tokens (refresh_token, expired_at, user_id)
+        VALUES (#{refreshToken}, #{expiredAt}, #{userId})
+    </insert>
+
+    <select id="findUserByEmail" resultType="com.yourmode.yourmodebackend.domain.user.domain.User" parameterType="string">
+        SELECT user_id AS userId,
+               email,
+               name,
+               role,
+        FROM users
+        WHERE email = #{email}
+    </select>
 
 </mapper>

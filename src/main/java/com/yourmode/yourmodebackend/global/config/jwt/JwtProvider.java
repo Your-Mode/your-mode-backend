@@ -1,4 +1,4 @@
-package com.yourmode.yourmodebackend.global.common.auth;
+package com.yourmode.yourmodebackend.global.config.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
