@@ -1,6 +1,7 @@
 package com.yourmode.yourmodebackend.domain.user.controller;
 
 import com.yourmode.yourmodebackend.domain.user.dto.AuthResponseDto;
+import com.yourmode.yourmodebackend.domain.user.dto.LocalLoginRequestDto;
 import com.yourmode.yourmodebackend.domain.user.dto.LocalSignupRequestDto;
 import com.yourmode.yourmodebackend.domain.user.service.AuthService;
 import com.yourmode.yourmodebackend.global.common.base.BaseResponse;
@@ -28,7 +29,7 @@ public class AuthController {
     /**
      * 로컬 회원가입
      */
-    @Operation(summary = "로컬 회원가입 API", description = "이메일 및 비밀번호를 통해 로컬 회원가입 후 액세스 토큰과 유저 정보를 반환하는 API 입니다.")
+    @Operation(summary = "로컬 회원가입 API", description = "이메일, 비밀번호 등을 통해 로컬 회원가입 후 액세스 토큰과 유저 정보를 반환하는 API 입니다.")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "COMMON200",
@@ -101,6 +102,61 @@ public class AuthController {
         return ResponseEntity.ok(
                 BaseResponse.onSuccess(authResponseDto)
         );
+    }
+
+    /**
+     * 로컬 로그인
+     */
+    @Operation(summary = "로컬 로그인 API", description = "이메일, 비밀번호로 로그인 후 액세스 토큰과 유저 정보를 반환하는 API 입니다.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "COMMON200",
+                    description = "로그인 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "로그인 성공",
+                                    summary = "정상 처리된 응답 예시",
+                                    value = """
+                    {
+                        "timestamp": "2025-06-27T15:00:00.000",
+                        "code": "COMMON200",
+                        "message": "요청에 성공하였습니다.",
+                        "result": {
+                            "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                            "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
+                            "email": "test@example.com"
+                        }
+                    }
+                    """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "AUTH401",
+                    description = "로그인 실패 (인증 정보 불일치)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "로그인 실패 - 인증 실패",
+                                    summary = "이메일 또는 비밀번호가 틀림",
+                                    value = """
+                    {
+                        "timestamp": "2025-06-27T15:01:00.000",
+                        "code": "AUTH401",
+                        "message": "인증 정보가 올바르지 않습니다.",
+                        "result": null
+                    }
+                    """
+                            )
+                    )
+            )
+    })
+    @PostMapping("/login")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> login(@Valid @RequestBody LocalLoginRequestDto request) {
+        AuthResponseDto authResponseDto = authService.login(request);
+        return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
     // todo: login, socialLogin, logout, accessToken 재발급, 비밀번호 바꾸기

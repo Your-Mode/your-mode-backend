@@ -1,6 +1,5 @@
 package com.yourmode.yourmodebackend.domain.user.dto;
 
-import com.yourmode.yourmodebackend.domain.user.enums.Gender;
 import com.yourmode.yourmodebackend.domain.user.enums.UserRole;
 import lombok.Getter;
 import lombok.Builder;

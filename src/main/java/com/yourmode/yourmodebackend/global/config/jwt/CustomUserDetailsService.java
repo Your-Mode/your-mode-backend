@@ -1,6 +1,6 @@
 package com.yourmode.yourmodebackend.global.config.jwt;
 
-import com.yourmode.yourmodebackend.domain.user.domain.User;
+import com.yourmode.yourmodebackend.domain.user.dto.UserWithCredential;
 import com.yourmode.yourmodebackend.domain.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,11 +16,17 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // 이메일로 User 엔티티 조회
-        User user = userMapper.findUserByEmail(email);
-        if (user == null) {
+        UserWithCredential userWithCredential = userMapper.findUserWithCredentialByEmail(email);
+
+        if (userWithCredential == null ||
+                userWithCredential.getUser() == null ||
+                userWithCredential.getCredential() == null) {
             throw new UsernameNotFoundException("User not found with email: " + email);
         }
-        return new CustomUserDetails(user);
+
+        return new CustomUserDetails(
+                userWithCredential.getUser(),
+                userWithCredential.getCredential().getPasswordHash()
+        );
     }
 }
