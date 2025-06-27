@@ -14,14 +14,23 @@ import com.yourmode.yourmodebackend.global.config.jwt.CustomUserDetails;
 import com.yourmode.yourmodebackend.global.config.jwt.JwtProvider;
 import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Service
@@ -31,6 +40,13 @@ public class AuthServiceImpl implements AuthService{
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final AuthenticationManager authenticationManager;
+    private final RestTemplate restTemplate;
+
+    @Value("${kakao.client-id}")
+    private String clientId;
+
+    @Value("${kakao.redirect-uri}")
+    private String redirectUri;
 
     /**
      * 로컬 회원가입 처리
@@ -55,7 +71,7 @@ public class AuthServiceImpl implements AuthService{
         User user = createAndSaveUser(request);
 
         // UserCredential 저장: 비밀번호 해시값 + OAuthProvider 정보
-        saveUserCredential(user.getUserId(), request.getPassword());
+        saveUserCredential(user.getUserId(), request.getPassword(), OAuthProvider.LOCAL, null);
 
         // UserProfile 저장: 키, 몸무게, 성별, 체형 등 프로필 정보
         saveUserProfile(user.getUserId(), request);
@@ -111,7 +127,7 @@ public class AuthServiceImpl implements AuthService{
      * @param request 회원가입 요청 DTO
      * @return 저장된 User 엔티티 (userId 포함)
      */
-    private User createAndSaveUser(LocalSignupRequestDto request) {
+    private User createAndSaveUser(CommonSignupRequest request) {
         User user = new User();
         user.setEmail(request.getEmail());
         user.setName(request.getName());
@@ -129,17 +145,19 @@ public class AuthServiceImpl implements AuthService{
 
     /**
      * UserCredential 저장
-     * 비밀번호는 암호화 후 저장하며 OAuthProvider 지정
+     * 비밀번호는 암호화 후 저장하며 OAuthProvider 및 OAuth ID를 함께 설정
      *
-     * @param userId 대상 유저 PK
-     * @param rawPassword 평문 비밀번호
+     * @param userId     대상 유저 PK
+     * @param rawPassword 평문 비밀번호 (암호화되어 저장됨)
+     * @param provider   로그인 제공자 정보 (LOCAL, KAKAO 등)
+     * @param oauthId    OAuth 로그인 사용자의 고유 ID (소셜 로그인인 경우), 일반 로그인은 null
      */
-    private void saveUserCredential(Long userId, String rawPassword) {
+    private void saveUserCredential(Long userId, String rawPassword, OAuthProvider provider, String oauthId) {
         UserCredential credential = new UserCredential();
         credential.setUserId(userId);
         credential.setPasswordHash(passwordEncoder.encode(rawPassword));
-        credential.setOauthProvider(OAuthProvider.LOCAL);
-        credential.setOauthId(null);
+        credential.setOauthProvider(provider);
+        credential.setOauthId(oauthId); // null for local, Kakao ID for kakao
 
         userMapper.insertUserCredential(credential);
     }
@@ -148,10 +166,10 @@ public class AuthServiceImpl implements AuthService{
      * UserProfile 저장
      * 키, 몸무게, 성별, 체형 ID 등 프로필 정보 저장
      *
-     * @param userId 대상 유저 PK
-     * @param request 회원가입 요청 DTO (프로필 정보 포함)
+     * @param userId  대상 유저 PK
+     * @param request 회원가입 요청 정보 (로컬/소셜 가입 모두 지원, CommonSignupRequest 구현체)
      */
-    private void saveUserProfile(Long userId, LocalSignupRequestDto request) {
+    private void saveUserProfile(Long userId, CommonSignupRequest request) {
         UserProfile profile = new UserProfile();
         profile.setUserId(userId);
         profile.setGender(request.getGender());
@@ -197,7 +215,7 @@ public class AuthServiceImpl implements AuthService{
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
 
-        // 인증 매니저를 통해 인증 시도 (UserDetailsService + PasswordEncoder가 검증 수행)
+        // authenticationManager를 통해 인증 시도 (UserDetailsService + PasswordEncoder가 검증 수행)
         Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
         // 인증 성공 시 인증 객체에서 사용자 정보 획득
@@ -225,5 +243,159 @@ public class AuthServiceImpl implements AuthService{
                 .build();
     }
 
-    // todo: 소셜 로그인, 로그아웃, 토큰 재발급, 비밀번호 변경 등 기능 구현
+    /**
+     * 인가 코드를 이용해 카카오에서 액세스 토큰과 리프레시 토큰을 요청하는 메서드
+     *
+     * @param authorizationCode 카카오에서 받은 인가 코드
+     * @return 토큰 정보가 담긴 Map (access_token, refresh_token 등)
+     */
+    public Map<String, Object> requestTokenWithKakao(String authorizationCode) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("grant_type", "authorization_code");
+        params.add("client_id", clientId);
+        params.add("redirect_uri", redirectUri);
+        params.add("code", authorizationCode);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
+
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                "https://kauth.kakao.com/oauth/token",
+                HttpMethod.POST,
+                request,
+                new ParameterizedTypeReference<Map<String, Object>>() {}
+        );
+
+        return response.getBody();
+    }
+
+    /**
+     * 액세스 토큰을 이용해 카카오 사용자 정보를 요청하는 메서드
+     *
+     * @param accessToken 카카오에서 발급받은 액세스 토큰
+     * @return 사용자 정보가 담긴 Map (이메일, 프로필 등)
+     */
+    public Map<String, Object> requestUserInfoWithKakao(String accessToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<?> request = new HttpEntity<>(headers);
+
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                "https://kapi.kakao.com/v2/user/me",
+                HttpMethod.GET,
+                request,
+                new ParameterizedTypeReference<Map<String, Object>>() {}
+        );
+
+        return response.getBody();
+    }
+
+    /**
+     * 카카오 인가 코드로 로그인 처리하는 메서드
+     * 1) 인가 코드로 토큰 발급
+     * 2) 토큰으로 사용자 정보 조회
+     * 3) 이메일로 회원가입 여부 확인
+     * 4) 신규회원이면 사용자 정보를 반환 -> 추가 정보 입력, 기존 회원이면 JWT 발급하여 로그인 처리
+     *
+     * @param authorizationCode 카카오 인가 코드
+     * @return 로그인 응답 DTO (JWT 토큰 등)
+     */
+    @Transactional
+    public AuthResponseDto processKakaoLogin(String authorizationCode) {
+        // 1. 카카오 토큰 발급
+        Map<String, Object> tokenInfo = requestTokenWithKakao(authorizationCode);
+        String accessToken = (String) tokenInfo.get("access_token");
+
+        // 2. 카카오 사용자 정보 조회
+        Map<String, Object> kakaoUserInfo = requestUserInfoWithKakao(accessToken);
+        Map<String, Object> kakaoAccount = (Map<String, Object>) kakaoUserInfo.get("kakao_account");
+        String email = (String) kakaoAccount.get("email");
+        Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
+        String nickname = (String) profile.get("nickname");
+
+        // 3. 회원 존재 여부 확인
+        if (userMapper.isEmailExists(email)) {
+            // 3-1. 신규 회원: 추가 정보 입력이 필요함을 응답
+            KakaoSignupRequestDto kakaoSignupRequest = KakaoSignupRequestDto.builder()
+                    .email(email)
+                    .name(nickname)
+                    .build();
+
+            return AuthResponseDto.ofNeedAdditionalInfo(kakaoSignupRequest);
+        }
+
+        // 4. 기존 회원 → DB에서 유저 조회
+        UserWithProfile userWithProfile = userMapper.findUserWithProfileByEmail(email);
+        Long userId = userWithProfile.getUser().getUserId();
+
+        // 5. JWT 토큰 발급
+        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId);
+        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId);
+
+        saveUserToken(userId, refresh.token(), refresh.expiry());
+
+        // 6. 응답용 유저 정보 생성
+        UserInfoDto userInfo = UserInfoDto.builder()
+                .name(userWithProfile.getUser().getName())
+                .role(userWithProfile.getUser().getRole())
+                .bodyTypeId(userWithProfile.getProfile().getBodyTypeId())
+                .build();
+
+        return AuthResponseDto.builder()
+                .accessToken(access.token())
+                .refreshToken(refresh.token())
+                .user(userInfo)
+                .build();
+    }
+
+    /**
+     * 카카오 회원가입 완료 처리 메서드
+     * 1) 이메일 중복 여부 확인
+     * 2) User 엔티티 생성 및 저장
+     * 3) UserCredential 저장 (비밀번호는 null, Kakao OAuth 정보 포함)
+     * 4) UserProfile 저장 (키, 몸무게, 성별, 체형 등 프로필 정보)
+     * 5) JWT 토큰 생성 및 저장
+     * 6) 로그인 완료 응답 반환
+     *
+     * @param request 카카오 회원가입 요청 DTO (추가 정보 포함)
+     * @return 로그인 응답 DTO (JWT 토큰, 사용자 정보 등)
+     */
+    public AuthResponseDto completeSignupWithKakao(KakaoSignupRequestDto request) {
+        // 1. 이메일 중복 체크 후 중복되면 예외 발생
+        validateDuplicateEmail(request.getEmail());
+
+        // 2. User 생성 및 저장, DB에서 자동 생성된 PK(userId) 필드 값이 세팅됨
+        User user = createAndSaveUser(request);
+
+        // 3. UserCredential 저장: Kakao OAuthProvider, oauthId 설정 필요
+        saveUserCredential(user.getUserId(), null, OAuthProvider.KAKAO, null);
+
+        // 4. UserProfile 저장: 키, 몸무게, 성별, 체형 등 프로필 정보
+        saveUserProfile(user.getUserId(), request);
+
+        // 5. JWT 액세스 토큰 및 리프레시 토큰 생성
+        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(user.getUserId());
+        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(user.getUserId());
+
+        saveUserToken(user.getUserId(), refresh.token(), refresh.expiry());
+
+        // 6. 응답용 유저 정보 DTO 생성 (이름, 역할, 체형ID 포함)
+        UserInfoDto userInfo = UserInfoDto.builder()
+                .name(user.getName())
+                .role(user.getRole())
+                .bodyTypeId(request.getBodyTypeId())
+                .build();
+
+        // 액세스 토큰, 리프레시 토큰, 유저 정보 포함한 응답 DTO 반환
+        return AuthResponseDto.builder()
+                .accessToken(access.token())
+                .refreshToken(refresh.token())
+                .user(userInfo)
+                .build();
+    }
+
+
 }

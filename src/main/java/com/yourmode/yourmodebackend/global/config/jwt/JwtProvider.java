@@ -75,4 +75,16 @@ public class JwtProvider {
                 .getBody();
         return Long.parseLong(claims.getSubject());
     }
+
+    public Long extractUserId(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("Invalid Authorization header");
+        }
+        String token = authorizationHeader.substring(7); // "Bearer " 길이만큼 자름
+        if (!validateToken(token)) {
+            throw new JwtException("Invalid or expired JWT token");
+        }
+        return getUserIdFromToken(token);
+    }
+
 }

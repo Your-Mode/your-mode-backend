@@ -6,7 +6,9 @@
 
     <!-- 이메일 중복 확인: 해당 이메일이 users 테이블에 존재하는지 여부 반환 -->
     <select id="isEmailExists" resultType="boolean">
-        SELECT COUNT(*) > 0 FROM users WHERE email = #{email}
+        SELECT EXISTS (
+            SELECT 1 FROM users WHERE email = #{email}
+        )
     </select>
 
     <!-- users 테이블에 새로운 유저 삽입, 자동 생성된 PK(userId) 반환 -->
@@ -76,6 +78,50 @@
             c.user_id
         FROM users u
                  JOIN user_credentials c ON u.user_id = c.user_id
+        WHERE u.email = #{email}
+    </select>
+
+    <!--
+    UserWithProfileResultMap:
+    users 테이블과 user_profiles 테이블을 조합하여 매핑하기 위한 resultMap 정의
+    - user 프로퍼티에 User 도메인 객체 매핑
+    - profile 프로퍼티에 UserProfile 도메인 객체 매핑
+    -->
+    <resultMap id="UserWithProfileResultMap" type="com.yourmode.yourmodebackend.domain.user.dto.UserWithProfile">
+        <association property="user" javaType="com.yourmode.yourmodebackend.domain.user.domain.User">
+            <id column="user_id" property="userId"/>
+            <result column="email" property="email"/>
+            <result column="name" property="name"/>
+            <result column="phone_number" property="phoneNumber"/>
+            <result column="role" property="role"/>
+        </association>
+        <association property="profile" javaType="com.yourmode.yourmodebackend.domain.user.domain.UserProfile">
+            <id column="profile_id" property="profileId"/>
+            <result column="height" property="height"/>
+            <result column="weight" property="weight"/>
+            <result column="gender" property="gender"/>
+            <result column="body_type_id" property="bodyTypeId"/>
+        </association>
+    </resultMap>
+
+    <!-- 이메일로 User + UserProfile 조회 -->
+    <select id="findUserWithProfileByEmail"
+            parameterType="string"
+            resultMap="UserWithProfileResultMap">
+        SELECT
+            u.user_id,
+            u.email,
+            u.name,
+            u.phone_number,
+            u.role,
+
+            p.profile_id,
+            p.height,
+            p.weight,
+            p.gender,
+            p.body_type_id,
+        FROM users u
+                 LEFT JOIN user_profiles p ON u.user_id = p.user_id
         WHERE u.email = #{email}
     </select>
 

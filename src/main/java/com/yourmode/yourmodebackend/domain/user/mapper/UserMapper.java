@@ -5,6 +5,7 @@ import com.yourmode.yourmodebackend.domain.user.domain.UserCredential;
 import com.yourmode.yourmodebackend.domain.user.domain.UserProfile;
 import com.yourmode.yourmodebackend.domain.user.domain.UserToken;
 import com.yourmode.yourmodebackend.domain.user.dto.UserWithCredential;
+import com.yourmode.yourmodebackend.domain.user.dto.UserWithProfile;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -17,4 +18,5 @@ public interface UserMapper {
     void insertUserToken(UserToken token);
 
     UserWithCredential findUserWithCredentialByEmail(@Param("email") String email);
+    UserWithProfile findUserWithProfileByEmail(@Param("email") String email);
 }

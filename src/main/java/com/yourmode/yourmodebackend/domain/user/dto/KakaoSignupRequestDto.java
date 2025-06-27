@@ -1,35 +1,16 @@
 package com.yourmode.yourmodebackend.domain.user.dto;
-
 import com.yourmode.yourmodebackend.domain.user.enums.Gender;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
-
-import lombok.Getter;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.Data;
 
-@Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class LocalSignupRequestDto implements CommonSignupRequest{
+@Data
+public class KakaoSignupRequestDto implements CommonSignupRequest{
 
     // User 정보
-    @Schema(description = "이메일", example = "test@example.com")
-    @NotBlank(message = "이메일은 필수입니다.")
-    @Email(message = "이메일 형식이 올바르지 않습니다.")
     private String email;
-
-    @Schema(description = "비밀번호 (영문, 숫자, 특수문자 포함 8자 이상)", example = "P@ssw0rd!")
-    @NotBlank(message = "비밀번호는 필수입니다.")
-    @Pattern(
-            regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,}$",
-            message = "비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상이어야 합니다."
-    )
-    private String password;
-
-    @NotBlank(message = "이름은 필수입니다.")
     private String name;
 
     @Schema(description = "전화번호", example = "010-1234-5678")

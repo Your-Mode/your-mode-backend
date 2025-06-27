@@ -1,6 +1,7 @@
 package com.yourmode.yourmodebackend.domain.user.controller;
 
 import com.yourmode.yourmodebackend.domain.user.dto.AuthResponseDto;
+import com.yourmode.yourmodebackend.domain.user.dto.KakaoSignupRequestDto;
 import com.yourmode.yourmodebackend.domain.user.dto.LocalLoginRequestDto;
 import com.yourmode.yourmodebackend.domain.user.dto.LocalSignupRequestDto;
 import com.yourmode.yourmodebackend.domain.user.service.AuthService;
@@ -12,12 +13,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.util.Map;
+
 import jakarta.validation.Valid;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -159,5 +167,68 @@ public class AuthController {
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
-    // todo: login, socialLogin, logout, accessToken 재발급, 비밀번호 바꾸기
+
+    @Value("${kakao.client-id}")
+    private String clientId;
+    @Value("${kakao.redirect-uri}")
+    private String redirectUri;
+
+    /**
+     * 카카오 로그인 인증 요청 엔드포인트
+     * <p>
+     * 1. 클라이언트가 GET /authorize 요청을 보냅니다.
+     * 2. 이 메서드는 카카오 인증 URL을 구성한 뒤, 클라이언트를 해당 URL로 리다이렉트합니다.
+     * 3. 사용자가 로그인 및 동의를 완료하면, Kakao가 Authorization Code를 포함해 리다이렉션합니다.
+     * 4. 서버는 code를 받아 access token을 요청하고 로그인 처리합니다.
+     *
+     * @param response HttpServletResponse 객체로 리다이렉션 수행
+     * @throws IOException 리다이렉션 중 예외 발생 시
+     */
+    @GetMapping("/oauth2/kakao/authorize")
+    public void redirectToKakaoAuth(HttpServletResponse response) throws IOException {
+
+        String kakaoAuthUrl = "https://kauth.kakao.com/oauth/authorize"
+                + "?client_id=" + clientId
+                + "&redirect_uri=" + redirectUri
+                + "&response_type=code";
+
+        response.sendRedirect(kakaoAuthUrl);
+    }
+
+    /**
+     * 카카오 로그인 요청 처리.
+     *
+     * @param body            JSON으로 전달된 인가 코드 ({@code {"code":"…"}})
+     * @param servletResponse 리프레시 토큰을 쿠키에 담기 위한 응답 객체
+     * @return 이메일, 닉네임과 함께 Authorization 헤더에 액세스 토큰이 설정된 응답
+     */
+    @PostMapping("/oauth2/kakao/login")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> loginWithKakao(
+            @RequestBody Map<String,String> body,
+            HttpServletResponse servletResponse
+    ) {
+        String code = body.get("code");
+        log.debug(code);
+
+        AuthResponseDto authResponseDto = authService.processKakaoLogin(code);
+        return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
+    }
+
+    /**
+     * 카카오 회원가입 완료 처리.
+     * <p>
+     * 클라이언트로부터 추가 프로필 정보가 포함된 가입 요청을 받아
+     * 신규 회원으로 사용자 등록 및 인증 토큰을 발급.
+     */
+    @PostMapping("/oauth2/kakao/signup/complete")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> completeSignupWithKakao(
+            @RequestBody KakaoSignupRequestDto signupRequest
+    ) {
+        AuthResponseDto responseDto = authService.completeSignupWithKakao(signupRequest);
+        return ResponseEntity.ok(BaseResponse.onSuccess(responseDto));
+    }
+
+    // todo: logout?, 탈퇴?, refresh token을 통한 access token 재발급
+    // todo: 비밀번호 변경, 전화번호 변경, 유저 프로필 변경 등
+
 }
