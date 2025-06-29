@@ -1,6 +1,6 @@
-package com.yourmode.yourmodebackend.global.config.jwt;
+package com.yourmode.yourmodebackend.global.config.security.auth;
 
-import com.yourmode.yourmodebackend.domain.user.dto.UserWithCredential;
+import com.yourmode.yourmodebackend.domain.user.dto.internal.UserWithCredential;
 import com.yourmode.yourmodebackend.domain.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-public class CustomUserDetailsService implements UserDetailsService {
+public class PrincipalDetailsService implements UserDetailsService {
 
     private final UserMapper userMapper;
 
@@ -24,7 +24,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("User not found with email: " + email);
         }
 
-        return new CustomUserDetails(
+        return new PrincipalDetails(
                 userWithCredential.getUser(),
                 userWithCredential.getCredential().getPasswordHash()
         );

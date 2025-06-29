@@ -1,4 +1,4 @@
-package com.yourmode.yourmodebackend.domain.user.dto;
+package com.yourmode.yourmodebackend.domain.user.dto.request;
 import com.yourmode.yourmodebackend.domain.user.enums.Gender;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;

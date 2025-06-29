@@ -4,15 +4,21 @@ import com.yourmode.yourmodebackend.domain.user.domain.User;
 import com.yourmode.yourmodebackend.domain.user.domain.UserCredential;
 import com.yourmode.yourmodebackend.domain.user.domain.UserProfile;
 import com.yourmode.yourmodebackend.domain.user.domain.UserToken;
-import com.yourmode.yourmodebackend.domain.user.dto.*;
+import com.yourmode.yourmodebackend.domain.user.dto.internal.UserWithProfile;
+import com.yourmode.yourmodebackend.domain.user.dto.request.CommonSignupRequest;
+import com.yourmode.yourmodebackend.domain.user.dto.request.KakaoSignupRequestDto;
+import com.yourmode.yourmodebackend.domain.user.dto.request.LocalLoginRequestDto;
+import com.yourmode.yourmodebackend.domain.user.dto.request.LocalSignupRequestDto;
+import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResponseDto;
+import com.yourmode.yourmodebackend.domain.user.dto.response.UserInfoDto;
 import com.yourmode.yourmodebackend.domain.user.enums.OAuthProvider;
 import com.yourmode.yourmodebackend.domain.user.enums.UserRole;
 import com.yourmode.yourmodebackend.domain.user.mapper.UserMapper;
 
 import com.yourmode.yourmodebackend.domain.user.status.UserErrorStatus;
-import com.yourmode.yourmodebackend.global.config.jwt.CustomUserDetails;
-import com.yourmode.yourmodebackend.global.config.jwt.JwtProvider;
+import com.yourmode.yourmodebackend.global.config.security.jwt.JwtProvider;
 import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
+import com.yourmode.yourmodebackend.global.config.security.auth.PrincipalDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -21,12 +27,12 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
@@ -84,19 +90,21 @@ public class AuthServiceImpl implements AuthService{
         Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
         // 인증된 사용자 정보 획득
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        Long userId = userDetails.getUserId();
+        PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
+
+        Long userId = principalDetails.getUserId();
+        String email = principalDetails.getEmail();
 
         // JWT 액세스 토큰 및 리프레시 토큰 생성
-        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId);
-        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId);
+        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId, email);
+        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, email);
 
         saveUserToken(userId, refresh.token(), refresh.expiry());
 
         // 응답용 유저 정보 DTO 생성 (이름, 역할, 체형ID 포함)
         UserInfoDto userInfo = UserInfoDto.builder()
-                .name(userDetails.getName())
-                .role(userDetails.getRole())
+                .name(principalDetails.getName())
+                .role(principalDetails.getRole())
                 .bodyTypeId(request.getBodyTypeId())
                 .build();
 
@@ -155,7 +163,11 @@ public class AuthServiceImpl implements AuthService{
     private void saveUserCredential(Long userId, String rawPassword, OAuthProvider provider, String oauthId) {
         UserCredential credential = new UserCredential();
         credential.setUserId(userId);
-        credential.setPasswordHash(passwordEncoder.encode(rawPassword));
+        if (rawPassword != null) {
+            credential.setPasswordHash(passwordEncoder.encode(rawPassword));
+        } else {
+            credential.setPasswordHash(null);
+        }
         credential.setOauthProvider(provider);
         credential.setOauthId(oauthId); // null for local, Kakao ID for kakao
 
@@ -209,6 +221,7 @@ public class AuthServiceImpl implements AuthService{
      * @return JWT 토큰 및 유저 정보 포함한 응답 DTO
      * @throws org.springframework.security.core.AuthenticationException 인증 실패 시 예외 발생
      */
+    @Transactional
     public AuthResponseDto login(LocalLoginRequestDto request) {
 
         // 인증 토큰 생성: 이메일, 비밀번호 정보 포함
@@ -219,20 +232,21 @@ public class AuthServiceImpl implements AuthService{
         Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
         // 인증 성공 시 인증 객체에서 사용자 정보 획득
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
 
-        Long userId = userDetails.getUserId();
+        Long userId = principalDetails.getUserId();
+        String email = principalDetails.getEmail();
 
         // JWT 액세스 토큰 및 리프레시 토큰 생성
-        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId);
-        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId);
+        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId, email);
+        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, email);
 
         // 발급된 리프레시 토큰 DB 저장
         saveUserToken(userId, refresh.token(), refresh.expiry());
 
         // 응답용 유저 정보 DTO 생성 (이름 포함)
         UserInfoDto userInfo = UserInfoDto.builder()
-                .name(userDetails.getName())
+                .name(principalDetails.getName())
                 .build();
 
         // 액세스 토큰, 리프레시 토큰, 유저 정보 포함 응답 DTO 반환
@@ -317,7 +331,7 @@ public class AuthServiceImpl implements AuthService{
         String nickname = (String) profile.get("nickname");
 
         // 3. 회원 존재 여부 확인
-        if (userMapper.isEmailExists(email)) {
+        if (!userMapper.isEmailExists(email)) {
             // 3-1. 신규 회원: 추가 정보 입력이 필요함을 응답
             KakaoSignupRequestDto kakaoSignupRequest = KakaoSignupRequestDto.builder()
                     .email(email)
@@ -332,8 +346,8 @@ public class AuthServiceImpl implements AuthService{
         Long userId = userWithProfile.getUser().getUserId();
 
         // 5. JWT 토큰 발급
-        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId);
-        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId);
+        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId, email);
+        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, email);
 
         saveUserToken(userId, refresh.token(), refresh.expiry());
 
@@ -363,33 +377,36 @@ public class AuthServiceImpl implements AuthService{
      * @param request 카카오 회원가입 요청 DTO (추가 정보 포함)
      * @return 로그인 응답 DTO (JWT 토큰, 사용자 정보 등)
      */
+    @Transactional
     public AuthResponseDto completeSignupWithKakao(KakaoSignupRequestDto request) {
-        // 1. 이메일 중복 체크 후 중복되면 예외 발생
+        // 1. 이메일 중복 체크 및 회원 생성, 저장
         validateDuplicateEmail(request.getEmail());
-
-        // 2. User 생성 및 저장, DB에서 자동 생성된 PK(userId) 필드 값이 세팅됨
         User user = createAndSaveUser(request);
-
-        // 3. UserCredential 저장: Kakao OAuthProvider, oauthId 설정 필요
         saveUserCredential(user.getUserId(), null, OAuthProvider.KAKAO, null);
-
-        // 4. UserProfile 저장: 키, 몸무게, 성별, 체형 등 프로필 정보
         saveUserProfile(user.getUserId(), request);
 
-        // 5. JWT 액세스 토큰 및 리프레시 토큰 생성
-        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(user.getUserId());
-        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(user.getUserId());
+        // 2. PrincipalDetails 생성 (password는 null or "")
+        PrincipalDetails principalDetails = new PrincipalDetails(user, "");
 
+        // 3. 인증 토큰 생성 (인증매니저가 처리할 authentication)
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(principalDetails, null, principalDetails.getAuthorities());
+
+        // 5. 인증 성공 시 SecurityContext에 저장 (로그인 상태 유지)
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // 6. JWT 토큰 생성 및 저장
+        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(user.getUserId(), user.getEmail());
+        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(user.getUserId(), user.getEmail());
         saveUserToken(user.getUserId(), refresh.token(), refresh.expiry());
 
-        // 6. 응답용 유저 정보 DTO 생성 (이름, 역할, 체형ID 포함)
+        // 7. 응답 DTO 생성 및 반환
         UserInfoDto userInfo = UserInfoDto.builder()
                 .name(user.getName())
                 .role(user.getRole())
                 .bodyTypeId(request.getBodyTypeId())
                 .build();
 
-        // 액세스 토큰, 리프레시 토큰, 유저 정보 포함한 응답 DTO 반환
         return AuthResponseDto.builder()
                 .accessToken(access.token())
                 .refreshToken(refresh.token())

@@ -1,4 +1,4 @@
-package com.yourmode.yourmodebackend.domain.user.dto;
+package com.yourmode.yourmodebackend.domain.user.dto.response;
 
 import com.yourmode.yourmodebackend.domain.user.enums.UserRole;
 import lombok.Getter;

@@ -1,6 +1,6 @@
-package com.yourmode.yourmodebackend.global.config;
+package com.yourmode.yourmodebackend.global.config.security;
 
-import com.yourmode.yourmodebackend.global.config.jwt.JwtAuthenticationFilter;
+import com.yourmode.yourmodebackend.global.config.security.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;

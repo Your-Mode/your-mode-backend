@@ -1,9 +1,9 @@
 package com.yourmode.yourmodebackend.domain.user.controller;
 
-import com.yourmode.yourmodebackend.domain.user.dto.AuthResponseDto;
-import com.yourmode.yourmodebackend.domain.user.dto.KakaoSignupRequestDto;
-import com.yourmode.yourmodebackend.domain.user.dto.LocalLoginRequestDto;
-import com.yourmode.yourmodebackend.domain.user.dto.LocalSignupRequestDto;
+import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResponseDto;
+import com.yourmode.yourmodebackend.domain.user.dto.request.KakaoSignupRequestDto;
+import com.yourmode.yourmodebackend.domain.user.dto.request.LocalLoginRequestDto;
+import com.yourmode.yourmodebackend.domain.user.dto.request.LocalSignupRequestDto;
 import com.yourmode.yourmodebackend.domain.user.service.AuthService;
 import com.yourmode.yourmodebackend.global.common.base.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;

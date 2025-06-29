@@ -1,4 +1,4 @@
-package com.yourmode.yourmodebackend.domain.user.dto;
+package com.yourmode.yourmodebackend.domain.user.dto.internal;
 
 import com.yourmode.yourmodebackend.domain.user.domain.User;
 import com.yourmode.yourmodebackend.domain.user.domain.UserCredential;

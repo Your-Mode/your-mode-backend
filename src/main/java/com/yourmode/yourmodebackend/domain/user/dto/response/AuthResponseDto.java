@@ -1,6 +1,7 @@
-package com.yourmode.yourmodebackend.domain.user.dto;
+package com.yourmode.yourmodebackend.domain.user.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.yourmode.yourmodebackend.domain.user.dto.request.KakaoSignupRequestDto;
 import lombok.Getter;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
