@@ -9,6 +9,8 @@ import com.yourmode.yourmodebackend.domain.user.dto.internal.UserWithProfile;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
+
 @Mapper
 public interface UserMapper {
     boolean isEmailExists(@Param("email") String email);
@@ -19,4 +21,9 @@ public interface UserMapper {
 
     UserWithCredential findUserWithCredentialByEmail(@Param("email") String email);
     UserWithProfile findUserWithProfileByEmail(@Param("email") String email);
+    UserToken findUserTokensByUserId(@Param("userId") Long userId);
+    void updateRefreshToken(@Param("userId") Long userId,
+                            @Param("refreshToken") String refreshToken,
+                            @Param("expiredAt") LocalDateTime expiredAt);
+
 }

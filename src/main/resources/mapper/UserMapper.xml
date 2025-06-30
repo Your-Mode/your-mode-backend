@@ -125,4 +125,28 @@
         WHERE u.email = #{email}
     </select>
 
+    <!-- user_id를 기준으로 user_tokens 정보를 조회하는 쿼리 -->
+    <select id="findUserTokensByUserId" resultType="com.yourmode.yourmodebackend.domain.user.domain.UserToken">
+        SELECT
+            token_id,
+            refresh_token,
+            expired_at,
+            user_id
+        FROM
+            user_tokens
+        WHERE
+            user_id = #{userId}
+    </select>
+
+    <!--
+    특정 user_id에 대해 user_tokens 테이블의 리프레시 토큰(refresh_token)과
+    만료일(expired_at)을 새로운 값으로 업데이트하는 쿼리
+    -->
+    <update id="updateRefreshToken">
+        UPDATE user_tokens
+        SET refresh_token = #{refreshToken},
+            expired_at = #{expiredAt}
+        WHERE user_id = #{userId}
+    </update>
+
 </mapper>

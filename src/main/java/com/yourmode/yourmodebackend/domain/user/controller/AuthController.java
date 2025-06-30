@@ -1,9 +1,7 @@
 package com.yourmode.yourmodebackend.domain.user.controller;
 
+import com.yourmode.yourmodebackend.domain.user.dto.request.*;
 import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResponseDto;
-import com.yourmode.yourmodebackend.domain.user.dto.request.KakaoSignupRequestDto;
-import com.yourmode.yourmodebackend.domain.user.dto.request.LocalLoginRequestDto;
-import com.yourmode.yourmodebackend.domain.user.dto.request.LocalSignupRequestDto;
 import com.yourmode.yourmodebackend.domain.user.service.AuthService;
 import com.yourmode.yourmodebackend.global.common.base.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,70 +34,143 @@ public class AuthController {
 
     /**
      * 로컬 회원가입
+     *
+     * @param request LocalSignupRequestDto - 회원가입 요청 데이터 (이메일, 비밀번호 등)
+     * @return 액세스 토큰과 유저 정보를 포함한 응답 DTO
      */
-    @Operation(summary = "로컬 회원가입 API", description = "이메일, 비밀번호 등을 통해 로컬 회원가입 후 액세스 토큰과 유저 정보를 반환하는 API 입니다.")
+    @Operation(summary = "로컬 회원가입", description = "이메일과 비밀번호를 통해 회원가입을 수행하고, JWT 토큰을 반환합니다.")
     @ApiResponses({
             @ApiResponse(
-                    responseCode = "COMMON200",
-                    description = "회원가입 완료 성공",
+                    responseCode = "200",
+                    description = "회원가입 성공",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = BaseResponse.class),
                             examples = @ExampleObject(
-                                    name = "회원가입 성공",
-                                    summary = "정상 처리된 응답 예시",
+                                    name = "회원가입 성공 예시",
+                                    summary = "회원가입 후 발급된 토큰과 유저 정보 반환",
                                     value = """
-                    {
-                        "timestamp": "2025-06-23T12:34:56.789",
-                        "code": "COMMON200",
-                        "message": "요청에 성공하였습니다.",
-                        "result": {
-                            "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                            "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
-                            "email": "test@example.com"
-                        }
+                {
+                    "timestamp": "2025-06-29T12:34:56.789",
+                    "code": "COMMON200",
+                    "message": "요청에 성공하였습니다.",
+                    "result": {
+                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
+                        "user": {
+                            "name": "홍길동",
+                            "role": "USER",
+                            "bodyTypeId": 2
+                        },
+                        "additionalInfoNeeded": null
                     }
-                    """
+                }
+                """
                             )
                     )
             ),
             @ApiResponse(
-                    responseCode = "COMMON402",
-                    description = "잘못된 요청 (입력 값 오류)",
+                    responseCode = "409",
+                    description = "중복 정보(이메일 또는 전화번호)로 인한 회원가입 실패",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    name = "회원가입 실패 - Validation Error",
-                                    summary = "필수 필드 누락 등 잘못된 입력값으로 인한 실패",
-                                    value = """
-                    {
-                        "timestamp": "2025-06-23T12:35:00.123",
-                        "code": "COMMON402",
-                        "message": "Validation Error입니다.",
-                        "result": {
-                            "email": "이메일은 필수입니다."
-                        }
-                    }
-                    """
-                            )
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "이메일 중복 오류",
+                                            summary = "이미 가입된 이메일로 회원가입 시도",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:35:01.123",
+                    "code": "AUTH-409-001",
+                    "message": "이미 사용 중인 이메일입니다."
+                }
+                """
+                                    ),
+                                    @ExampleObject(
+                                            name = "전화번호 중복 오류",
+                                            summary = "이미 사용 중인 전화번호로 회원가입 시도",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:36:22.456",
+                    "code": "AUTH-409-002",
+                    "message": "이미 사용 중인 전화번호입니다."
+                }
+                """
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
-                    responseCode = "AUTH409",
-                    description = "중복된 이메일로 인한 실패",
+                    responseCode = "500",
+                    description = "회원가입 도중 DB 저장 중 오류 발생",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    name = "회원가입 실패 - 이메일 중복",
-                                    summary = "이미 등록된 이메일",
-                                    value = """
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - User",
+                                            summary = "User 테이블 저장 실패 시",
+                                            value = """
                     {
-                        "timestamp": "2025-06-23T12:35:10.456",
-                        "code": "AUTH409",
-                        "message": "이미 사용 중인 이메일입니다.",
-                        "result": null
+                        "timestamp": "2025-06-29T12:35:02.456",
+                        "code": "AUTH-500-001",
+                        "message": "사용자 정보를 DB에 저장하는 중 오류가 발생했습니다."
                     }
                     """
+                                    ),
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - Credential",
+                                            summary = "UserCredential 저장 실패 시",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:03.789",
+                        "code": "AUTH-500-002",
+                        "message": "사용자 인증정보 저장 중 오류가 발생했습니다."
+                    }
+                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - Profile",
+                                            summary = "UserProfile 저장 실패 시",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:04.321",
+                        "code": "AUTH-500-003",
+                        "message": "프로필 정보를 저장하는 도중 오류가 발생했습니다."
+                    }
+                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - Token",
+                                            summary = "Refresh Token 저장 실패 시",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:05.654",
+                        "code": "AUTH-500-004",
+                        "message": "사용자 토큰 저장 중 오류가 발생했습니다."
+                    }
+                    """
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "회원가입 후 인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "회원가입 후 인증 실패",
+                                    summary = "회원가입은 성공했으나, 인증(로그인) 과정에서 실패",
+                                    value = """
+                {
+                    "timestamp": "2025-06-29T12:45:00.789",
+                    "code": "AUTH-401-001",
+                    "message": "인증에 실패했습니다."
+                }
+                """
                             )
                     )
             )
@@ -114,50 +185,69 @@ public class AuthController {
 
     /**
      * 로컬 로그인
+     *
+     * @param request LocalLoginRequestDto - 로그인 요청 데이터 (이메일, 비밀번호)
+     * @return 액세스 토큰과 유저 정보를 포함한 응답 DTO
      */
-    @Operation(summary = "로컬 로그인 API", description = "이메일, 비밀번호로 로그인 후 액세스 토큰과 유저 정보를 반환하는 API 입니다.")
+    @Operation(summary = "로컬 로그인", description = "이메일과 비밀번호를 통해 로그인하고 JWT 토큰과 사용자 정보를 반환합니다.")
     @ApiResponses({
             @ApiResponse(
-                    responseCode = "COMMON200",
+                    responseCode = "200",
                     description = "로그인 성공",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = BaseResponse.class),
-                            examples = @ExampleObject(
-                                    name = "로그인 성공",
-                                    summary = "정상 처리된 응답 예시",
+                            examples = @ExampleObject(name = "로그인 성공 예시",
+                                    summary = "로그인 후 발급된 토큰과 유저 정보 반환",
                                     value = """
-                    {
-                        "timestamp": "2025-06-27T15:00:00.000",
-                        "code": "COMMON200",
-                        "message": "요청에 성공하였습니다.",
-                        "result": {
-                            "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                            "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
-                            "email": "test@example.com"
-                        }
+                {
+                    "timestamp": "2025-06-29T12:34:56.789",
+                    "code": "COMMON200",
+                    "message": "요청에 성공하였습니다.",
+                    "result": {
+                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
+                        "user": {
+                            "name": "홍길동",
+                            "role": "USER",
+                            "bodyTypeId": 2
+                        },
+                        "additionalInfoNeeded": null
                     }
-                    """
-                            )
+                }
+                """)
                     )
             ),
             @ApiResponse(
-                    responseCode = "AUTH401",
-                    description = "로그인 실패 (인증 정보 불일치)",
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인 과정에서 인증 실패 또는 이메일/비밀번호 오류",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    name = "로그인 실패 - 인증 실패",
-                                    summary = "이메일 또는 비밀번호가 틀림",
-                                    value = """
-                    {
-                        "timestamp": "2025-06-27T15:01:00.000",
-                        "code": "AUTH401",
-                        "message": "인증 정보가 올바르지 않습니다.",
-                        "result": null
-                    }
-                    """
-                            )
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "로그인 인증 실패",
+                                            summary = "인증(로그인) 과정에서 실패",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:45:00.789",
+                    "code": "AUTH-401-001",
+                    "message": "인증에 실패했습니다."
+                }
+                """
+                                    ),
+                                    @ExampleObject(
+                                            name = "이메일 또는 비밀번호 오류",
+                                            summary = "이메일 또는 비밀번호가 올바르지 않음",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:45:01.789",
+                    "code": "AUTH-401-002",
+                    "message": "이메일 또는 비밀번호가 올바르지 않습니다."
+                }
+                """
+                                    )
+                            }
                     )
             )
     })
@@ -184,6 +274,10 @@ public class AuthController {
      * @param response HttpServletResponse 객체로 리다이렉션 수행
      * @throws IOException 리다이렉션 중 예외 발생 시
      */
+    @Operation(
+            summary = "카카오 로그인 인증 요청",
+            description = "클라이언트를 카카오 인증 페이지로 리다이렉트합니다."
+    )
     @GetMapping("/oauth2/kakao/authorize")
     public void redirectToKakaoAuth(HttpServletResponse response) throws IOException {
 
@@ -198,19 +292,140 @@ public class AuthController {
     /**
      * 카카오 로그인 요청 처리.
      *
-     * @param body            JSON으로 전달된 인가 코드 ({@code {"code":"…"}})
-     * @param servletResponse 리프레시 토큰을 쿠키에 담기 위한 응답 객체
-     * @return 이메일, 닉네임과 함께 Authorization 헤더에 액세스 토큰이 설정된 응답
+     * @param request KakaoLoginRequestDto - 카카오 인가 코드를 담은 데이터
+     * @param servletResponse 리프레시 토큰을 쿠키 등에 설정하기 위한 HttpServletResponse
+     * @return 로그인 성공 시 액세스 토큰과 사용자 정보가 포함된 응답을 반환
      */
+    @Operation(
+            summary = "카카오 로그인 요청 처리",
+            description = "인가 코드(code)를 받아 카카오 로그인 처리를 수행합니다. 신규 회원일 시 \"additionalInfoNeeded\"에 사용자 정보를 담아 반환합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "로그인 성공 (추가 정보 필요 여부에 따라 결과가 다름)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "추가 정보가 필요 없는 로그인 성공",
+                                            summary = "기존 회원 로그인 성공, 추가 정보 필요 없음",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:34:56.789",
+                    "code": "COMMON200",
+                    "message": "요청에 성공하였습니다.",
+                    "result": {
+                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
+                        "user": {
+                            "name": "홍길동",
+                            "role": "USER",
+                            "bodyTypeId": 2
+                        },
+                        "additionalInfoNeeded": null
+                    }
+                }
+                """
+                                    ),
+                                    @ExampleObject(
+                                            name = "추가 정보가 필요한 로그인 성공",
+                                            summary = "신규 회원 로그인 성공, 추가 정보 필요",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:35:00.123",
+                    "code": "COMMON200",
+                    "message": "요청에 성공하였습니다.",
+                    "result": {
+                        "accessToken": null,
+                        "refreshToken": null,
+                        "user": null,
+                        "additionalInfoNeeded": {
+                            "email": "newuser@example.com",
+                            "name": "신규 회원"
+                        }
+                    }
+                }
+                """
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자 정보가 존재하지 않는 경우",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "사용자 미존재",
+                                    summary = "이메일은 존재하지만 사용자 정보가 없을 때 발생",
+                                    value = """
+            {
+                "timestamp": "2025-06-29T12:45:00.000",
+                "code": "USER-404-001",
+                "message": "사용자를 찾을 수 없습니다."
+            }
+            """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "502",
+                    description = "카카오 토큰/사용자 정보 요청 실패 관련 에러들",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "카카오 토큰 요청 실패",
+                                            summary = "",
+                                            value = """
+            {
+                "timestamp": "2025-06-29T12:40:00.000",
+                "code": "KAKAO-502-001",
+                "message": "카카오 토큰 요청에 실패했습니다."
+            }
+            """),
+                                    @ExampleObject(
+                                            name = "카카오 사용자 정보 요청 실패",
+                                            summary = "",
+                                            value = """
+            {
+                "timestamp": "2025-06-29T12:40:01.000",
+                "code": "KAKAO-502-002",
+                "message": "카카오 사용자 정보 요청에 실패했습니다."
+            }
+            """)
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "503",
+                    description = "카카오 서버와의 통신 불가능",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "카카오 서버와 통신 불가능",
+                                    summary = "",
+                                    value = """
+            {
+                "timestamp": "2025-06-29T12:40:00.000",
+                "code": "KAKAO-503-001",
+                "message": "카카오 서버와의 통신이 불가능합니다."
+            }
+            """)
+                    )
+            )
+    })
     @PostMapping("/oauth2/kakao/login")
     public ResponseEntity<BaseResponse<AuthResponseDto>> loginWithKakao(
-            @RequestBody Map<String,String> body,
+            @Valid @RequestBody KakaoLoginRequestDto request,
             HttpServletResponse servletResponse
     ) {
-        String code = body.get("code");
-        log.debug(code);
-
-        AuthResponseDto authResponseDto = authService.processKakaoLogin(code);
+        AuthResponseDto authResponseDto = authService.processKakaoLogin(request);
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
@@ -219,16 +434,223 @@ public class AuthController {
      * <p>
      * 클라이언트로부터 추가 프로필 정보가 포함된 가입 요청을 받아
      * 신규 회원으로 사용자 등록 및 인증 토큰을 발급.
+     *
+     * @param request KakaoSignupRequestDto - 카카오 회원가입 요청 DTO (추가 프로필 정보 포함)
+     * @return 회원가입 완료 후 발급된 인증 토큰과 사용자 정보가 포함된 응답 반환
+     *
      */
+    @Operation(summary = "카카오 회원가입 완료 처리", description = "추가 프로필 정보가 포함된 가입 요청을 받아 신규 회원으로 사용자 등록 및 인증 토큰을 발급합니다.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "회원가입 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "회원가입 성공 예시",
+                                    summary = "회원가입 후 발급된 토큰과 유저 정보 반환",
+                                    value = """
+                {
+                    "timestamp": "2025-06-29T12:34:56.789",
+                    "code": "COMMON200",
+                    "message": "요청에 성공하였습니다.",
+                    "result": {
+                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
+                        "user": {
+                            "name": "홍길동",
+                            "role": "USER",
+                            "bodyTypeId": 2
+                        },
+                        "additionalInfoNeeded": null
+                    }
+                }
+                """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "중복 정보(이메일 또는 전화번호)로 인한 회원가입 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "이메일 중복 오류",
+                                            summary = "이미 가입된 이메일로 회원가입 시도",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:35:01.123",
+                    "code": "AUTH-409-001",
+                    "message": "이미 사용 중인 이메일입니다."
+                }
+                """
+                                    ),
+                                    @ExampleObject(
+                                            name = "전화번호 중복 오류",
+                                            summary = "이미 사용 중인 전화번호로 회원가입 시도",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:36:22.456",
+                    "code": "AUTH-409-002",
+                    "message": "이미 사용 중인 전화번호입니다."
+                }
+                """
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "회원가입 도중 DB 저장 중 오류 발생",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - User",
+                                            summary = "User 테이블 저장 실패 시",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:02.456",
+                        "code": "AUTH-500-001",
+                        "message": "사용자 정보를 DB에 저장하는 중 오류가 발생했습니다."
+                    }
+                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - Credential",
+                                            summary = "UserCredential 저장 실패 시",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:03.789",
+                        "code": "AUTH-500-002",
+                        "message": "사용자 인증정보 저장 중 오류가 발생했습니다."
+                    }
+                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - Profile",
+                                            summary = "UserProfile 저장 실패 시",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:04.321",
+                        "code": "AUTH-500-003",
+                        "message": "프로필 정보를 저장하는 도중 오류가 발생했습니다."
+                    }
+                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - Token",
+                                            summary = "Refresh Token 저장 실패 시",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:05.654",
+                        "code": "AUTH-500-004",
+                        "message": "사용자 토큰 저장 중 오류가 발생했습니다."
+                    }
+                    """
+                                    )
+                            }
+                    )
+            )
+    })
     @PostMapping("/oauth2/kakao/signup/complete")
     public ResponseEntity<BaseResponse<AuthResponseDto>> completeSignupWithKakao(
-            @RequestBody KakaoSignupRequestDto signupRequest
+            @Valid @RequestBody KakaoSignupRequestDto request
     ) {
-        AuthResponseDto responseDto = authService.completeSignupWithKakao(signupRequest);
+        AuthResponseDto responseDto = authService.completeSignupWithKakao(request);
         return ResponseEntity.ok(BaseResponse.onSuccess(responseDto));
     }
 
-    // todo: logout?, 탈퇴?, refresh token을 통한 access token 재발급
+    /**
+     * 리프레시 토큰으로 액세스 토큰 재발급 처리
+     *
+     * @param request RefreshTokenRequestDto - 리프레시 토큰 재발급 요청 DTO (리프레시 토큰 포함)
+     * @return 새로 발급된 액세스 토큰 및 리프레시 토큰이 포함된 응답
+     *
+     */
+    @Operation(summary = "액세스 토큰 재발급", description = "리프레시 토큰으로 액세스 토큰 재발급 처리합니다.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "회원가입 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "회원가입 성공 예시",
+                                    summary = "회원가입 후 발급된 토큰과 유저 정보 반환",
+                                    value = """
+                {
+                    "timestamp": "2025-06-29T12:34:56.789",
+                    "code": "COMMON200",
+                    "message": "요청에 성공하였습니다.",
+                    "result": {
+                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
+                        "user": {
+                            "name": "홍길동",
+                            "role": "USER",
+                            "bodyTypeId": 2
+                        },
+                        "additionalInfoNeeded": null
+                    }
+                }
+                """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자 정보가 존재하지 않는 경우",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "사용자 미존재",
+                                    summary = "이메일은 존재하지만 사용자 정보가 없을 때 발생",
+                                    value = """
+            {
+                "timestamp": "2025-06-29T12:45:00.000",
+                "code": "USER-404-001",
+                "message": "사용자를 찾을 수 없습니다."
+            }
+            """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "토큰 정보가 유효하지 않은 경우",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "유효하지 않은 토큰",
+                                    summary = "토큰 검증 후 유효하지 않을 때 발생",
+                                    value = """
+            {
+                "timestamp": "2025-06-29T12:45:00.000",
+                "code": "USER-404-001",
+                "message": "유효하지 않은 토큰입니다."
+            }
+            """
+                            )
+                    )
+            ),
+    })
+    @PostMapping("/refresh-token")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> refreshAccessToken(
+            @Valid @RequestBody RefreshTokenRequestDto request
+    ) {
+        AuthResponseDto authResponseDto = authService.refreshAccessToken(request);
+        return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
+    }
+
+    // todo: logout, 탈퇴
     // todo: 비밀번호 변경, 전화번호 변경, 유저 프로필 변경 등
 
 }
