@@ -650,7 +650,7 @@ public class AuthController {
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
-    // todo: logout, 탈퇴
-    // todo: 비밀번호 변경, 전화번호 변경, 유저 프로필 변경 등
+    // todo: logout
+    // todo: 탈퇴, 비밀번호 변경, 유저 프로필 변경 등
 
 }

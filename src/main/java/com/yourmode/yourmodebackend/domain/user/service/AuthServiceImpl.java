@@ -491,6 +491,10 @@ public class AuthServiceImpl implements AuthService{
 
         // 리프레시 토큰 유효성 검사
         if (!jwtProvider.validateToken(refreshToken)) {
+            // 만료 검사 구분 예시
+            if (jwtProvider.isTokenExpired(refreshToken)) {
+                throw new RestApiException(UserErrorStatus.EXPIRED_REFRESH_TOKEN);
+            }
             throw new RestApiException(UserErrorStatus.INVALID_TOKEN);
         }
 
@@ -527,5 +531,4 @@ public class AuthServiceImpl implements AuthService{
                 .user(userInfo)
                 .build();
     }
-
 }

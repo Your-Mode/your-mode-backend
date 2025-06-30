@@ -30,7 +30,7 @@ public enum UserErrorStatus implements BaseCodeInterface {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH-404-001", "해당 이메일의 사용자를 찾을 수 없습니다."),
 
     // 토큰
-    // TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH-401-003", "토큰이 만료되었습니다."),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-401-003", "토큰이 만료되었습니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-401-003", "유효하지 않은 토큰입니다.");
 
     private final HttpStatus httpStatus;

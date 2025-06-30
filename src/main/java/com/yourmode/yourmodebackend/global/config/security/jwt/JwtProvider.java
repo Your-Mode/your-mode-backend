@@ -108,4 +108,22 @@ public class JwtProvider {
         return getEmailFromToken(token);
     }
 
+    public boolean isTokenExpired(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            Date expiration = claims.getExpiration();
+            return expiration.before(new Date()); // 현재 시간보다 이전이면 만료된 것
+        } catch (ExpiredJwtException e) {
+            return true; // 명백히 만료된 경우
+        } catch (JwtException | IllegalArgumentException e) {
+            return false; // 만료 외 다른 문제 (ex. 변조, 서명 오류 등) → validateToken에서 처리
+        }
+    }
+
+
 }
