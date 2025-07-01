@@ -1,9 +1,15 @@
 package com.yourmode.yourmodebackend.domain.user.domain;
 
 import com.yourmode.yourmodebackend.domain.user.enums.Gender;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserProfile {
     private Long profileId;
     private Float height;
