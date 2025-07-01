@@ -157,4 +157,24 @@
         WHERE user_id = #{userId}
     </delete>
 
+    <!--
+    전화번호(phone_number)를 기준으로 users 테이블에서 사용자 정보를 조회하는 쿼리
+    -->
+    <select id="findUserByPhoneNumber" resultType="com.yourmode.yourmodebackend.domain.user.domain.User">
+        SELECT *
+        FROM users
+        WHERE REPLACE(phone_number, '-', '') = #{phoneNumber}
+    </select>
+
+    <!--
+    전화번호로 User와 UserCredential을 조인하여 비밀번호(password_hash)를 업데이트하는 쿼리
+    users 테이블의 phone_number 컬럼을 조건으로 사용
+-->
+    <update id="updatePasswordByPhoneNumber" parameterType="map">
+        UPDATE user_credentials c
+            JOIN users u ON c.user_id = u.user_id
+            SET c.password_hash = #{passwordHash}
+        WHERE u.phone_number = #{phoneNumber}
+    </update>
+
 </mapper>

@@ -45,7 +45,7 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/api/auth/**"     // 로그인/회원가입 등
+                                "/api/auth/**"     // 로그인/회원가입/비밀번호 변경
                         ).permitAll()
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                         .anyRequest().authenticated() // 그 외 모든 요청은 인증 필요

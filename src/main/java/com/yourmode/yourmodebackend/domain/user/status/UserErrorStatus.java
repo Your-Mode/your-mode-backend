@@ -35,7 +35,15 @@ public enum UserErrorStatus implements BaseCodeInterface {
 
     // 로그아웃 관련 에러
     LOGOUT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH-500-005", "로그아웃 처리 중 오류가 발생했습니다."),
-    LOGOUT_NO_ACTIVE_SESSION(HttpStatus.BAD_REQUEST, "AUTH-400-002", "로그아웃할 활성 세션이 존재하지 않습니다.");
+    LOGOUT_NO_ACTIVE_SESSION(HttpStatus.BAD_REQUEST, "AUTH-400-001", "로그아웃할 활성 세션이 존재하지 않습니다."),
+
+    // PasswordResetService 관련 에러 추가
+    USER_NOT_FOUND_PHONE_NUMBER(HttpStatus.NOT_FOUND, "AUTH-404-002", "해당 전화번호로 가입된 사용자가 존재하지 않습니다."),
+    SMS_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH-500-006", "SMS 인증 코드 전송 중 오류가 발생했습니다."),
+    INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "AUTH-400-002", "인증 코드가 유효하지 않습니다."),
+    UNAUTHORIZED_PASSWORD_CHANGE(HttpStatus.UNAUTHORIZED, "AUTH-401-004", "비밀번호 변경 권한이 없습니다. 인증을 먼저 진행해주세요."),
+    SMS_SEND_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "AUTH-429-001", "SMS 발송 요청 횟수 제한을 초과했습니다. 잠시 후 다시 시도해주세요."),
+    PASSWORD_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH-500-007", "비밀번호 변경에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final boolean isSuccess = false;

@@ -26,4 +26,8 @@ public interface UserMapper {
                             @Param("refreshToken") String refreshToken,
                             @Param("expiredAt") LocalDateTime expiredAt);
     int deleteUserToken(@Param("userId") Long userId);
+
+    User findUserByPhoneNumber(@Param("phoneNumber") String phoneNumber);
+    int updatePasswordByPhoneNumber(@Param("passwordHash") String passwordHash,
+                                     @Param("phoneNumber") String phoneNumber);
 }
