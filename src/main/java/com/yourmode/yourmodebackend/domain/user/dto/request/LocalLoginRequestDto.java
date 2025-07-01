@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
+@Schema(description = "로컬 로그인 요청 DTO")
 public class LocalLoginRequestDto {
 
     @Schema(description = "이메일", example = "test@example.com")

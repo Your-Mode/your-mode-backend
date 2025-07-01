@@ -2,8 +2,11 @@ package com.yourmode.yourmodebackend.domain.user.controller;
 
 import com.yourmode.yourmodebackend.domain.user.dto.request.*;
 import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResponseDto;
+import com.yourmode.yourmodebackend.domain.user.dto.response.UserIdResponseDto;
 import com.yourmode.yourmodebackend.domain.user.service.AuthService;
 import com.yourmode.yourmodebackend.global.common.base.BaseResponse;
+import com.yourmode.yourmodebackend.global.config.security.auth.CurrentUser;
+import com.yourmode.yourmodebackend.global.config.security.auth.PrincipalDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -650,7 +653,75 @@ public class AuthController {
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
-    // todo: logout
+    @Operation(summary = "로그아웃", description = "현재 로그인된 사용자의 리프레시 토큰을 삭제하여 로그아웃 처리합니다.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "로그아웃 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "로그아웃 성공 예시",
+                                    summary = "성공적으로 로그아웃되어 사용자 ID 반환",
+                                    value = """
+                {
+                  "timestamp": "2025-06-30T10:20:30.123",
+                  "code": "COMMON200",
+                  "message": "요청에 성공하였습니다.",
+                  "result": {
+                    "userId": 12345
+                  }
+                }
+                """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "활성 세션이 없는 상태에서 로그아웃 시도",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "활성 세션 없음",
+                                    summary = "삭제할 리프레시 토큰이 없어 활성 세션이 없다고 판단할 때 발생",
+                                    value = """
+                {
+                  "timestamp": "2025-06-30T10:25:00.000",
+                  "code": "AUTH-400-002",
+                  "message": "활성화된 세션이 존재하지 않습니다.",
+                }
+                """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 내부 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "서버 오류",
+                                    summary = "로그아웃 처리 중 서버 오류 발생",
+                                    value = """
+                {
+                  "timestamp": "2025-06-30T10:30:00.000",
+                  "code": "AUTH-500-005",
+                  "message": "로그아웃 처리 중 오류가 발생했습니다.",
+                }
+                """
+                            )
+                    )
+            )
+    })
+    @PostMapping("/logout")
+    public ResponseEntity<BaseResponse<UserIdResponseDto>> logout(@CurrentUser PrincipalDetails principal) {
+        UserIdResponseDto userIdResponseDto = authService.logout(principal);
+        return ResponseEntity.ok(BaseResponse.onSuccess(userIdResponseDto));
+    }
+
     // todo: 탈퇴, 비밀번호 변경, 유저 프로필 변경 등
 
 }

@@ -7,6 +7,7 @@ import com.yourmode.yourmodebackend.domain.user.domain.UserToken;
 import com.yourmode.yourmodebackend.domain.user.dto.internal.UserWithProfile;
 import com.yourmode.yourmodebackend.domain.user.dto.request.*;
 import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResponseDto;
+import com.yourmode.yourmodebackend.domain.user.dto.response.UserIdResponseDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.UserInfoDto;
 import com.yourmode.yourmodebackend.domain.user.enums.OAuthProvider;
 import com.yourmode.yourmodebackend.domain.user.enums.UserRole;
@@ -17,6 +18,7 @@ import com.yourmode.yourmodebackend.global.config.security.jwt.JwtProvider;
 import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
 import com.yourmode.yourmodebackend.global.config.security.auth.PrincipalDetails;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.dao.DataAccessException;
@@ -41,6 +43,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class AuthServiceImpl implements AuthService{
@@ -531,4 +534,31 @@ public class AuthServiceImpl implements AuthService{
                 .user(userInfo)
                 .build();
     }
+
+    /**
+     * 로그아웃 처리 메서드.
+     *
+     * 현재 로그인한 사용자의 리프레시 토큰을 데이터베이스에서 삭제하여 로그아웃을 수행
+     *
+     * @param principal 현재 인증된 사용자의 인증 정보(PrincipalDetails)
+     * @return UserIdResponseDto 삭제 대상 사용자 ID를 포함한 응답 DTO
+     * @throws RestApiException 삭제할 리프레시 토큰이 존재하지 않을 경우 또는 삭제 과정에서 예외가 발생할 경우
+     *         - LOGOUT_NO_ACTIVE_SESSION: 삭제할 토큰이 없어 활성 세션이 없다고 판단할 때 발생
+     *         - LOGOUT_FAILED: 토큰 삭제 과정에서 예기치 못한 예외가 발생했을 때 발생
+     */
+    public UserIdResponseDto logout(PrincipalDetails principal) {
+        Long userId = principal.getUserId();
+        try {
+            int deletedCount = userMapper.deleteUserToken(userId);
+            if (deletedCount == 0) {
+                log.warn("No refresh token found for deletion. userId={}", userId);
+                throw new RestApiException(UserErrorStatus.LOGOUT_NO_ACTIVE_SESSION);
+            }
+            return new UserIdResponseDto(userId);
+        } catch (Exception e) {
+            log.error("Error occurred while deleting refresh token. userId={}", userId, e);
+            throw new RestApiException(UserErrorStatus.LOGOUT_FAILED); // 적절한 에러 코드 정의
+        }
+    }
+
 }

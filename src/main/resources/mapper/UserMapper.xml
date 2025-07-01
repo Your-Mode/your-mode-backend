@@ -149,4 +149,12 @@
         WHERE user_id = #{userId}
     </update>
 
+    <!--
+    특정 user_id에 대해 user_tokens 테이블의 리프레시 토큰 정보를 삭제하는 쿼리
+    -->
+    <delete id="deleteUserToken">
+        DELETE FROM user_tokens
+        WHERE user_id = #{userId}
+    </delete>
+
 </mapper>

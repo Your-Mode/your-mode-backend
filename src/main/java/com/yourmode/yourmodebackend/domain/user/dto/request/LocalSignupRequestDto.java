@@ -13,6 +13,7 @@ import lombok.AllArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "로컬 회원가입 요청 DTO")
 public class LocalSignupRequestDto implements CommonSignupRequest{
 
     // User 정보

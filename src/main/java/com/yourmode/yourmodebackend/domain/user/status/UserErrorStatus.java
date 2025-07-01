@@ -31,7 +31,11 @@ public enum UserErrorStatus implements BaseCodeInterface {
 
     // 토큰
     EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-401-003", "토큰이 만료되었습니다."),
-    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-401-003", "유효하지 않은 토큰입니다.");
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-401-003", "유효하지 않은 토큰입니다."),
+
+    // 로그아웃 관련 에러
+    LOGOUT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH-500-005", "로그아웃 처리 중 오류가 발생했습니다."),
+    LOGOUT_NO_ACTIVE_SESSION(HttpStatus.BAD_REQUEST, "AUTH-400-002", "로그아웃할 활성 세션이 존재하지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final boolean isSuccess = false;

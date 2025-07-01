@@ -25,5 +25,5 @@ public interface UserMapper {
     void updateRefreshToken(@Param("userId") Long userId,
                             @Param("refreshToken") String refreshToken,
                             @Param("expiredAt") LocalDateTime expiredAt);
-
+    int deleteUserToken(@Param("userId") Long userId);
 }

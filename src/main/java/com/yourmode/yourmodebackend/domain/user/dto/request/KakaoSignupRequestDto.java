@@ -7,6 +7,7 @@ import lombok.Data;
 
 @Builder
 @Data
+@Schema(description = "카카오 신규회원 회원가입 요청 DTO")
 public class KakaoSignupRequestDto implements CommonSignupRequest{
 
     // User 정보
