@@ -1,0 +1,33 @@
+coolsms:
+  fromnumber: '01099378784'
+  apisecret: QVN3SR7M7UJQMAQJ1ZLOA0SR6HBIIVEX
+  apikey: NCSZNCROYPKKCXMF
+kakao:
+  redirect-uri: http://localhost:8080/auth/kakao/callback
+  client-id: 1fb4acb7a0416b315298081821739e3b
+spring:
+  application:
+    name: your-mode-backend
+  datasource:
+    password: '0918'
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    url: jdbc:mysql://localhost:3306/yourmode_local?serverTimezone=Asia/Seoul
+  data:
+    redis:
+      port: '6379'
+      host: localhost
+mybatis:
+  type-aliases-package: com.yourmode.yourmodebackend.domain
+  mapper-locations: classpath*:/mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: 'true '
+jwt:
+  secret: your-mode-secure-secret-key-long-long-long
+  refresh-token-expiration: '604800000'
+  access-token-expiration: '3600000'
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+server:
+  port: '8080'
