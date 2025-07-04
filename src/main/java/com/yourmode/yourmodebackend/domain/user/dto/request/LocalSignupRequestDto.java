@@ -33,9 +33,9 @@ public class LocalSignupRequestDto implements CommonSignupRequest{
     @NotBlank(message = "이름은 필수입니다.")
     private String name;
 
-    @Schema(description = "전화번호", example = "010-1234-5678")
+    @Schema(description = "전화번호", example = "01012345678")
     @NotBlank(message = "전화번호는 필수입니다.")
-    @Pattern(regexp = "^01[016789]-?\\d{4}-?\\d{4}$", message = "전화번호 형식이 올바르지 않습니다.")
+    @Pattern(regexp = "^010\\d{8}$")
     private String phoneNumber;
 
     @NotNull(message = "서비스 이용약관 동의는 필수입니다.")

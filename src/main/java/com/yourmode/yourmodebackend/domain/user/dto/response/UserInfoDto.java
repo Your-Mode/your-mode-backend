@@ -13,5 +13,4 @@ import lombok.AllArgsConstructor;
 public class UserInfoDto {
     private String name;
     private UserRole role;
-    private Long bodyTypeId;
 }

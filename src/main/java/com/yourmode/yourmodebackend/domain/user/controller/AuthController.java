@@ -30,7 +30,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "Auth", description = "인증 관련 API (회원가입, 로그인 등)")
+@Tag(name = "Auth: 회원가입, 로그인", description = "인증 관련 API (회원가입, 로그인 등)")
 public class AuthController {
 
     private final AuthService authService;
