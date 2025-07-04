@@ -499,53 +499,39 @@ public class AuthServiceImpl implements AuthService{
     @Transactional
     public AuthResponseDto refreshAccessToken(RefreshTokenRequestDto request) {
         String refreshToken = request.getRefreshToken();
-        log.info("🔄 리프레시 토큰 갱신 요청: token={}", refreshToken);
 
         // 리프레시 토큰 유효성 검사
         if (!jwtProvider.validateToken(refreshToken)) {
             if (jwtProvider.isTokenExpired(refreshToken)) {
-                log.warn("⚠️ 만료된 리프레시 토큰");
                 throw new RestApiException(UserErrorStatus.EXPIRED_REFRESH_TOKEN);
             }
-            log.error("❌ 유효하지 않은 리프레시 토큰");
             throw new RestApiException(UserErrorStatus.INVALID_TOKEN);
         }
 
         // 리프레시 토큰에서 사용자 정보 추출
         String email = jwtProvider.getEmailFromToken(refreshToken);
         Long userId = jwtProvider.getUserIdFromToken(refreshToken);
-        log.info("✅ 토큰에서 추출한 사용자 정보: userId={}, email={}", userId, email);
 
         // DB에서 리프레시 토큰 확인
         UserToken savedToken = userTokenRepository.findByUserId(userId)
-                .orElseThrow(() -> {
-                    log.error("❌ 저장된 토큰이 없음: userId={}", userId);
-                    return new RestApiException(UserErrorStatus.INVALID_TOKEN);
-                });
+                .orElseThrow(() -> new RestApiException(UserErrorStatus.INVALID_TOKEN));
 
         // 새 토큰 발급
         JwtProvider.JwtWithExpiry newAccess = jwtProvider.generateAccessToken(userId, email);
         JwtProvider.JwtWithExpiry newRefresh = jwtProvider.generateRefreshToken(userId, email);
-        log.debug("🔐 새 토큰 발급 완료: access.expiry={}, refresh.expiry={}", newAccess.expiry(), newRefresh.expiry());
 
         // DB에 리프레시 토큰 업데이트
         savedToken.updateToken(newRefresh.token(), newRefresh.expiry());
         userTokenRepository.save(savedToken);
-        log.info("💾 리프레시 토큰 DB 업데이트 완료");
 
         // 사용자 정보 조회
         User user = userRepository.findByEmailWithProfile(email)
-                .orElseThrow(() -> {
-                    log.error("❌ 사용자 정보 조회 실패: email={}", email);
-                    return new RestApiException(UserErrorStatus.USER_NOT_FOUND);
-                });
+                .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
 
         UserInfoDto userInfo = UserInfoDto.builder()
                 .name(user.getName())
                 .role(user.getRole())
                 .build();
-
-        log.info("🎉 토큰 재발급 완료: userId={}, email={}", userId, email);
 
         return AuthResponseDto.builder()
                 .accessToken(newAccess.token())
@@ -572,12 +558,10 @@ public class AuthServiceImpl implements AuthService{
         try {
             int deletedCount = userTokenRepository.deleteByUserId(userId);
             if (deletedCount == 0) {
-                log.warn("No refresh token found for deletion. userId={}", userId);
                 throw new RestApiException(UserErrorStatus.LOGOUT_NO_ACTIVE_SESSION);
             }
             return new UserIdResponseDto(userId);
         } catch (Exception e) {
-            log.error("Error occurred while deleting refresh token. userId={}", userId, e);
             throw new RestApiException(UserErrorStatus.LOGOUT_FAILED);
         }
     }

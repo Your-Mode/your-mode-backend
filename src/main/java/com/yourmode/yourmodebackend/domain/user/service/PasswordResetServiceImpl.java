@@ -19,8 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PasswordResetServiceImpl implements PasswordResetService {
     private final SmsCertificationUtil smsCertificationUtil; // SMS 인증 유틸리티 객체
-    private final SmsRepository smsRepository;
-    private final UserRepository userRepository;// SMS 레포지토리 객체 (Redis)
+    private final SmsRepository smsRepository; // SMS 레포지토리 객체 (Redis)
+    private final UserRepository userRepository;
     private final UserCredentialRepository userCredentialRepository;
     private final PasswordEncoder passwordEncoder;
 
