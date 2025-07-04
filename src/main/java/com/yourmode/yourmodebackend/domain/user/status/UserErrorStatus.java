@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum UserErrorStatus implements BaseCodeInterface {
 
+    INVALID_BODY_TYPE(HttpStatus.BAD_REQUEST, "AUTH-400-003", "유효하지 않은 체형 타입입니다."),
+    
     // 회원가입
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "AUTH-409-001", "이미 사용 중인 이메일입니다."),
     DUPLICATE_PHONE_NUMBER(HttpStatus.CONFLICT, "AUTH-409-002", "이미 사용 중인 전화번호입니다."),
@@ -43,7 +45,8 @@ public enum UserErrorStatus implements BaseCodeInterface {
     INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "AUTH-400-002", "인증 코드가 유효하지 않습니다."),
     UNAUTHORIZED_PASSWORD_CHANGE(HttpStatus.UNAUTHORIZED, "AUTH-401-004", "비밀번호 변경 권한이 없습니다. 인증을 먼저 진행해주세요."),
     SMS_SEND_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "AUTH-429-001", "SMS 발송 요청 횟수 제한을 초과했습니다. 잠시 후 다시 시도해주세요."),
-    PASSWORD_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH-500-007", "비밀번호 변경에 실패했습니다.");
+    PASSWORD_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH-500-007", "비밀번호 변경에 실패했습니다."),
+    CREDENTIAL_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH-404-003", "사용자 자격증명 정보를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final boolean isSuccess = false;

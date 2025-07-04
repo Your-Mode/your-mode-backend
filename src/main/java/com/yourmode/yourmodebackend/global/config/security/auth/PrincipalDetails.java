@@ -1,6 +1,6 @@
 package com.yourmode.yourmodebackend.global.config.security.auth;
 
-import com.yourmode.yourmodebackend.domain.user.domain.User;
+import com.yourmode.yourmodebackend.domain.user.entity.User;
 import com.yourmode.yourmodebackend.domain.user.enums.UserRole;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,7 +18,7 @@ public class PrincipalDetails implements UserDetails {
 
     // 로컬 or OAuth2 로그인 모두 이 생성자 사용
     public PrincipalDetails(User user, String passwordHash) {
-        this.userId = user.getUserId();
+        this.userId = user.getId();
         this.email = user.getEmail();
         this.name = user.getName();
         this.role = user.getRole();

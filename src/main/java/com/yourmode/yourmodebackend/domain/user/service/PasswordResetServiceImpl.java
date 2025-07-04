@@ -1,11 +1,12 @@
 package com.yourmode.yourmodebackend.domain.user.service;
 
-import com.yourmode.yourmodebackend.domain.user.domain.User;
+import com.yourmode.yourmodebackend.domain.user.entity.*;
 import com.yourmode.yourmodebackend.domain.user.dto.request.PasswordChangeRequestDto;
 import com.yourmode.yourmodebackend.domain.user.dto.request.SmsSendRequestDto;
 import com.yourmode.yourmodebackend.domain.user.dto.request.SmsVerifyRequestDto;
-import com.yourmode.yourmodebackend.domain.user.mapper.UserMapper;
 import com.yourmode.yourmodebackend.domain.user.redis.SmsRepository;
+import com.yourmode.yourmodebackend.domain.user.repository.UserCredentialRepository;
+import com.yourmode.yourmodebackend.domain.user.repository.UserRepository;
 import com.yourmode.yourmodebackend.domain.user.status.UserErrorStatus;
 import com.yourmode.yourmodebackend.domain.user.util.SmsCertificationUtil;
 import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
@@ -19,7 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class PasswordResetServiceImpl implements PasswordResetService {
     private final SmsCertificationUtil smsCertificationUtil; // SMS 인증 유틸리티 객체
     private final SmsRepository smsRepository;
-    private final UserMapper userMapper;// SMS 레포지토리 객체 (Redis)
+    private final UserRepository userRepository;// SMS 레포지토리 객체 (Redis)
+    private final UserCredentialRepository userCredentialRepository;
     private final PasswordEncoder passwordEncoder;
 
     private static final int MAX_SMS_SEND_COUNT = 5; // 1시간에 최대 5회 제한
@@ -29,10 +31,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     public void sendSMS(SmsSendRequestDto request) {
         String phoneNum = request.getPhoneNumber();
         // 해당 전화번호로 가입된 사용자가 있는지 확인
-        User user = userMapper.findUserByPhoneNumber(phoneNum);
-        if (user == null) {
-            throw new RestApiException(UserErrorStatus.USER_NOT_FOUND_PHONE_NUMBER); // 가입된 사용자가 없으면 예외 처리
-        }
+        User user = userRepository.findByPhoneNumber(phoneNum)
+                .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND_PHONE_NUMBER));
 
         // 발송 횟수 체크
         long sendCount = smsRepository.incrementSendCount(phoneNum, COUNT_LIMIT_SECONDS);
@@ -69,27 +69,23 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
     @Transactional
     public void changePassword(PasswordChangeRequestDto request) {
-        String phone = request.getPhoneNumber();
+        String phoneNum = request.getPhoneNumber();
 
         // 인증 완료 여부 확인
-        if (!smsRepository.hasVerificationPassed(phone)) {
+        if (!smsRepository.hasVerificationPassed(phoneNum)) {
             throw new RestApiException(UserErrorStatus.UNAUTHORIZED_PASSWORD_CHANGE);
         }
 
-        User user = userMapper.findUserByPhoneNumber(phone);
-        if (user == null) {
-            throw new RestApiException(UserErrorStatus.USER_NOT_FOUND_PHONE_NUMBER);
-        }
+        User user = userRepository.findByPhoneNumber(phoneNum)
+                .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND_PHONE_NUMBER));
 
-        // 비밀번호 암호화 후 DB 업데이트)
-        int updatedCount = userMapper.updatePasswordByPhoneNumber(
-                phone, passwordEncoder.encode(request.getNewPassword()));
+        UserCredential credential = userCredentialRepository.findByUser(user)
+                .orElseThrow(() -> new RestApiException(UserErrorStatus.CREDENTIAL_NOT_FOUND));
 
-        if (updatedCount == 0) {
-            throw new RestApiException(UserErrorStatus.PASSWORD_UPDATE_FAILED);
-        }
+        credential.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userCredentialRepository.save(credential);
 
         // 변경 후 인증 완료 플래그 삭제 (재사용 방지)
-        smsRepository.deleteVerificationPassed(phone);
+        smsRepository.deleteVerificationPassed(phoneNum);
     }
 }
