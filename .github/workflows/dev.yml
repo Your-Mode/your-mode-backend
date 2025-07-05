@@ -42,4 +42,4 @@ jobs:
           aws-region: ap-northeast-2
 
       - name: Upload build artifacts to S3
-        run: aws s3 cp build/libs/yourmode-0.0.1-SNAPSHOT.jar s3://${{ secrets.S3_BUCKET }}/${{ secrets.S3_PATH }}/ --acl public-read
+        run: aws s3 cp build/libs/your-mode-backend-0.0.1-SNAPSHOT.jar s3://${{ secrets.S3_BUCKET }}/${{ secrets.S3_PATH }}/ --acl public-read
