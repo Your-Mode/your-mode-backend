@@ -28,8 +28,11 @@ jobs:
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
 
-      - name: Build with Gradle using 'local' profile
-        run: ./gradlew build -x test -Dspring.profiles.active=local
+      - name: Build with Gradle using 'dev' profile
+        run: ./gradlew build -x test -Dspring.profiles.active=dev
+        
+      - name: List build artifacts
+        run: ls -al build/libs
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
