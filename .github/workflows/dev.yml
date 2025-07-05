@@ -23,7 +23,7 @@ jobs:
       - name: Create application-local.properties
         run: |
           cd src/main/resources
-          echo "${{ secrets.APPLICATION_LOCAL }}" > application-local.properties
+          echo "${{ secrets.APPLICATION_DEV }}" > application-local.properties
 
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
