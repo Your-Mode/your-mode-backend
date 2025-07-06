@@ -65,7 +65,7 @@ jobs:
       - name: Upload deployment zip to S3
         run: aws s3 cp your-mode-deploy.zip s3://${{ secrets.S3_BUCKET }}/your-mode/deploy/your-mode-deploy.zip --sse AES256
 
-      # 11. CodeDeploy를 트리거 (선택)
+      # 11. CodeDeploy를 트리거
       - name: Trigger CodeDeploy deployment
         run: |
           aws deploy create-deployment \
