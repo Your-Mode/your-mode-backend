@@ -1,0 +1,11 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /home/ubuntu/app  # EC2에 배포할 경로
+
+hooks:
+  AfterInstall:
+    - location: scripts/deploy.sh
+      timeout: 180
+      runas: ubuntu

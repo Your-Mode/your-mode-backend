@@ -36,6 +36,7 @@ jobs:
       - name: Build with Gradle using 'dev' profile
         run: ./gradlew build -x test -Dspring.profiles.active=dev
 
+
       # 6. 빌드 결과물 확인
       - name: List build artifacts
         run: ls -al build/libs
@@ -73,3 +74,4 @@ jobs:
             --s3-location bucket=${{ secrets.S3_BUCKET }},key=${{ secrets.S3_KEY }},bundleType=zip \
             --deployment-config-name CodeDeployDefault.AllAtOnce \
             --file-exists-behavior OVERWRITE
+
