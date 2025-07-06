@@ -27,6 +27,7 @@ jobs:
         run: |
           cd src/main/resources
           echo "${{ secrets.APPLICATION_DEV }}" > application-dev.properties
+
       # 4. gradlew 실행 권한 부여
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
@@ -34,6 +35,7 @@ jobs:
       # 5. Gradle 빌드 (테스트 제외, dev 프로필로)
       - name: Build with Gradle using 'dev' profile
         run: ./gradlew build -x test -Dspring.profiles.active=dev
+
 
       # 6. 빌드 결과물 확인
       - name: List build artifacts
@@ -54,6 +56,7 @@ jobs:
           cp build/libs/*.jar deploy/
           cp appspec.yml deploy/
           cp -r scripts/* deploy/scripts/
+
       # 9. 배포용 zip 압축 생성
       - name: Create deployment zip file
         run: zip -r your-mode-deploy.zip . -i "deploy/*"
@@ -71,3 +74,4 @@ jobs:
             --s3-location bucket=${{ secrets.S3_BUCKET }},key=${{ secrets.S3_KEY }},bundleType=zip \
             --deployment-config-name CodeDeployDefault.AllAtOnce \
             --file-exists-behavior OVERWRITE
+
