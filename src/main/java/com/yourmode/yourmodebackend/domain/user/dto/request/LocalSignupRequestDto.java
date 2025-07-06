@@ -44,7 +44,7 @@ public class LocalSignupRequestDto implements CommonSignupRequest{
     @NotNull(message = "개인정보 처리방침 동의는 필수입니다.")
     private Boolean isPrivacyPolicyAgreed;
 
-    private Boolean isMarketingAgreed = false; // 선택 항목
+    private Boolean isMarketingAgreed;
 
     // UserProfile 정보
     @Schema(description = "사용자 키 (cm 단위)", example = "175.5")
