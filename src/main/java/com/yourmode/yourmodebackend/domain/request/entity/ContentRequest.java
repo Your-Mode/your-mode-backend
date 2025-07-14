@@ -7,6 +7,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "content_requests")
@@ -18,7 +20,7 @@ public class ContentRequest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(name = "body_feature", length = 200)
     private String bodyFeature;
@@ -65,4 +67,8 @@ public class ContentRequest {
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
     }
+
+    @OneToMany(mappedBy = "contentRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ContentRequestStatusHistory> statusHistories = new ArrayList<>();
+
 }

@@ -1,4 +1,4 @@
-package com.yourmode.yourmodebackend.domain.request.dto.user.response;
+package com.yourmode.yourmodebackend.domain.request.dto.user.request;
 
 import lombok.*;
 import java.time.LocalDateTime;
@@ -11,5 +11,6 @@ import java.time.LocalDateTime;
 public class ContentRequestStatusHistoryDto {
     private LocalDateTime changedAt;
     private String statusName;
-    private Integer editorId;
+    private Long editorId;
+    private String editorName;
 }
