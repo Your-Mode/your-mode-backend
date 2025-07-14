@@ -1,7 +1,7 @@
 package com.yourmode.yourmodebackend.domain.request.dto.user.response;
 
-import com.yourmode.yourmodebackend.domain.request.dto.user.request.ContentRequestStatusHistoryDto;
-import com.yourmode.yourmodebackend.domain.user.entity.UserProfile;
+import com.yourmode.yourmodebackend.domain.request.dto.ContentRequestStatusHistoryDto;
+import com.yourmode.yourmodebackend.domain.request.dto.UserProfileSummaryDto;
 import lombok.*;
 
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ContentRequestDetailDto {
+public class UserContentRequestDetailDto {
 
     private UserProfileSummaryDto profile;
     private Long id;

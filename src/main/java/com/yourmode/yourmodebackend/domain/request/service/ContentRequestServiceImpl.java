@@ -1,11 +1,13 @@
 package com.yourmode.yourmodebackend.domain.request.service;
 
+import com.yourmode.yourmodebackend.domain.request.dto.editor.response.EditorContentRequestDetailDto;
+import com.yourmode.yourmodebackend.domain.request.dto.editor.response.EditorContentRequestSummaryDto;
 import com.yourmode.yourmodebackend.domain.request.dto.user.request.ContentRequestCreateDto;
-import com.yourmode.yourmodebackend.domain.request.dto.user.response.ContentRequestDetailDto;
-import com.yourmode.yourmodebackend.domain.request.dto.user.request.ContentRequestStatusHistoryDto;
+import com.yourmode.yourmodebackend.domain.request.dto.user.response.UserContentRequestDetailDto;
+import com.yourmode.yourmodebackend.domain.request.dto.ContentRequestStatusHistoryDto;
 import com.yourmode.yourmodebackend.domain.request.dto.user.response.ContentRequestResponseDto;
-import com.yourmode.yourmodebackend.domain.request.dto.user.response.ContentRequestSummaryDto;
-import com.yourmode.yourmodebackend.domain.request.dto.user.response.UserProfileSummaryDto;
+import com.yourmode.yourmodebackend.domain.request.dto.user.response.UserContentRequestSummaryDto;
+import com.yourmode.yourmodebackend.domain.request.dto.UserProfileSummaryDto;
 import com.yourmode.yourmodebackend.domain.request.entity.ContentRequest;
 import com.yourmode.yourmodebackend.domain.request.entity.ContentRequestStatusHistory;
 import com.yourmode.yourmodebackend.domain.request.entity.ItemCategory;
@@ -30,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -98,9 +101,8 @@ public class ContentRequestServiceImpl implements ContentRequestService {
                 .build();
     }
 
-
     @Override
-    public List<ContentRequestSummaryDto> getRequestsByUserId(Long userId) {
+    public List<UserContentRequestSummaryDto> getRequestsByUserId(Long userId) {
         List<ContentRequest> requests = contentRequestRepository.findAllByUserId(userId);
 
         return requests.stream().map(request -> {
@@ -113,7 +115,7 @@ public class ContentRequestServiceImpl implements ContentRequestService {
                             .build())
                     .collect(Collectors.toList());
 
-            return com.yourmode.yourmodebackend.domain.request.dto.user.response.ContentRequestSummaryDto.builder()
+            return UserContentRequestSummaryDto.builder()
                     .id(request.getId())
                     .bodyFeature(request.getBodyFeature())
                     .situation(request.getSituation())
@@ -125,7 +127,7 @@ public class ContentRequestServiceImpl implements ContentRequestService {
         }).collect(Collectors.toList());
     }
 
-    public ContentRequestDetailDto getContentRequestById(Integer id, Long userId) {
+    public UserContentRequestDetailDto getContentRequestById(Long id, Long userId) {
         ContentRequest request = contentRequestRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("ContentRequest not found with id: " + id));
 
@@ -165,7 +167,7 @@ public class ContentRequestServiceImpl implements ContentRequestService {
                     .build();
         }
 
-        return ContentRequestDetailDto.builder()
+        return UserContentRequestDetailDto.builder()
                 .id(request.getId())
                 .bodyFeature(request.getBodyFeature())
                 .situation(request.getSituation())
@@ -180,5 +182,136 @@ public class ContentRequestServiceImpl implements ContentRequestService {
                 .build();
     }
 
+    @Override
+    public List<EditorContentRequestSummaryDto> getAllRequestsForEditor() {
+        List<ContentRequest> requests = contentRequestRepository.findAllByOrderByCreatedAtDesc();
 
+        return requests.stream().map(request -> {
+            List<ContentRequestStatusHistoryDto> historyDtos = request.getStatusHistories().stream()
+                    .map(history -> ContentRequestStatusHistoryDto.builder()
+                            .changedAt(history.getChangedAt())
+                            .statusName(history.getStatus().getCodeName())
+                            .editorId(history.getEditor() != null ? history.getEditor().getId() : null)
+                            .editorName(history.getEditor() != null ? history.getEditor().getName() : null)
+                            .build())
+                    .collect(Collectors.toList());
+
+            List<Long> categoryIds = request.getItemCategories().stream()
+                    .map(ItemCategory::getId)
+                    .collect(Collectors.toList());
+
+            List<String> categoryNames = request.getItemCategories().stream()
+                    .map(ItemCategory::getName)
+                    .collect(Collectors.toList());
+
+            UserProfileSummaryDto profileDto = userProfileRepository.findByUserId(request.getUser().getId())
+                    .map(profile -> UserProfileSummaryDto.builder()
+                            .name(request.getUser().getName())
+                            .height(profile.getHeight())
+                            .weight(profile.getWeight())
+                            .bodyTypeName(profile.getBodyType() != null ? profile.getBodyType().getName() : null)
+                            .build())
+                    .orElse(null);
+
+            return EditorContentRequestSummaryDto.builder()
+                    .id(request.getId())
+                    .profile(profileDto)
+                    .bodyFeature(request.getBodyFeature())
+                    .situation(request.getSituation())
+                    .recommendedStyle(request.getRecommendedStyle())
+                    .createdAt(request.getCreatedAt())
+                    .itemCategoryIds(categoryIds)
+                    .itemCategoryNames(categoryNames)
+                    .statusHistories(historyDtos)
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
+    public EditorContentRequestDetailDto getContentRequestDetailForEditor(Long id) {
+        // 1. 요청 데이터 조회 (User, UserProfile, ItemCategories, StatusHistories 포함)
+        Optional<ContentRequest> optionalRequest = contentRequestRepository.findByIdWithUserAndProfile(id);
+        if (optionalRequest.isEmpty()) {
+            return null; // 또는 빈 DTO 반환
+        }
+        ContentRequest request = optionalRequest.get();
+
+        // 2. UserProfile DTO 생성 (UserProfileSummaryDto)
+        UserProfileSummaryDto profileDto = null;
+        if (request.getUser().getProfile() != null) {
+            profileDto = UserProfileSummaryDto.builder()
+                    .name(request.getUser().getName())
+                    .height(request.getUser().getProfile().getHeight())
+                    .weight(request.getUser().getProfile().getWeight())
+                    .bodyTypeName(request.getUser().getProfile().getBodyType() != null
+                            ? request.getUser().getProfile().getBodyType().getName() : null)
+                    .build();
+        }
+
+        // 3. 상태 이력 리스트 DTO 생성
+        List<ContentRequestStatusHistoryDto> historyDtos = request.getStatusHistories().stream()
+                .map(history -> ContentRequestStatusHistoryDto.builder()
+                        .changedAt(history.getChangedAt())
+                        .statusName(history.getStatus().getCodeName())
+                        .editorId(history.getEditor() != null ? history.getEditor().getId() : null)
+                        .editorName(history.getEditor() != null ? history.getEditor().getName() : null)
+                        .build())
+                .collect(Collectors.toList());
+
+        // 4. 카테고리 아이디, 이름 리스트 생성
+        List<Long> categoryIds = request.getItemCategories().stream()
+                .map(ItemCategory::getId)
+                .collect(Collectors.toList());
+
+        List<String> categoryNames = request.getItemCategories().stream()
+                .map(ItemCategory::getName)
+                .collect(Collectors.toList());
+
+        // 5. DTO 생성 및 반환
+        EditorContentRequestDetailDto dto = new EditorContentRequestDetailDto();
+        dto.setId(request.getId());
+        dto.setUser(request.getUser());
+        dto.setProfile(profileDto);
+        dto.setBodyFeature(request.getBodyFeature());
+        dto.setSituation(request.getSituation());
+        dto.setRecommendedStyle(request.getRecommendedStyle());
+        dto.setAvoidedStyle(request.getAvoidedStyle());
+        dto.setBudget(request.getBudget());
+        dto.setIsPublic(request.getIsPublic());
+        dto.setStatus(request.getStatus() != null ? request.getStatus().getCodeName() : null);
+        dto.setItemCategoryIds(categoryIds);
+        dto.setItemCategoryNames(categoryNames);
+        dto.setCreatedAt(request.getCreatedAt());
+
+        return dto;
+    }
+
+    @Override
+    @Transactional
+    public void updateStatus(Long requestId, String statusCode, Long editorId) {
+        // 1. 요청 데이터 조회
+        ContentRequest request = contentRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("컨텐츠 요청을 찾을 수 없습니다. id=" + requestId));
+
+        // 2. 상태 코드 조회 (RequestStatusCode 엔티티)
+        RequestStatusCode newStatus = requestStatusCodeRepository.findByCodeName(statusCode)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 상태 코드입니다: " + statusCode));
+
+        // 3. 에디터(사용자) 조회
+        User editor = userRepository.findById(editorId)
+                .orElseThrow(() -> new IllegalArgumentException("에디터 사용자를 찾을 수 없습니다. id=" + editorId));
+
+        // 4. 상태 변경
+        request.setStatus(newStatus);
+        contentRequestRepository.save(request);
+
+        // 5. 상태 변경 이력 생성 및 저장
+        ContentRequestStatusHistory history = ContentRequestStatusHistory.builder()
+                .contentRequest(request)
+                .status(newStatus)
+                .editor(editor)
+                .changedAt(LocalDateTime.now())
+                .build();
+
+        contentRequestStatusHistoryRepository.save(history);
+    }
 }

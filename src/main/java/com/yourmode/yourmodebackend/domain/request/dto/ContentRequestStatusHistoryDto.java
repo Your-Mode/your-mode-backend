@@ -1,4 +1,4 @@
-package com.yourmode.yourmodebackend.domain.request.dto.user.request;
+package com.yourmode.yourmodebackend.domain.request.dto;
 
 import lombok.*;
 import java.time.LocalDateTime;

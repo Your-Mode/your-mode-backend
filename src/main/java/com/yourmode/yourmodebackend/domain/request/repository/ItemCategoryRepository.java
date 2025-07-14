@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 @Repository
-public interface ItemCategoryRepository extends JpaRepository<ItemCategory, Integer> {
+public interface ItemCategoryRepository extends JpaRepository<ItemCategory, Long> {
 
     // 카테고리 이름으로 존재 여부 확인
     boolean existsByName(String name);

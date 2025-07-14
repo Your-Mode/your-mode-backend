@@ -1,4 +1,4 @@
-package com.yourmode.yourmodebackend.domain.request.dto.user.response;
+package com.yourmode.yourmodebackend.domain.request.dto;
 
 import lombok.*;
 

@@ -1,10 +1,13 @@
 package com.yourmode.yourmodebackend.domain.request.controller;
 
+import com.yourmode.yourmodebackend.domain.request.dto.editor.response.EditorContentRequestDetailDto;
 import com.yourmode.yourmodebackend.domain.request.dto.user.request.ContentRequestCreateDto;
-import com.yourmode.yourmodebackend.domain.request.dto.user.response.ContentRequestDetailDto;
+import com.yourmode.yourmodebackend.domain.request.dto.user.response.UserContentRequestDetailDto;
 import com.yourmode.yourmodebackend.domain.request.dto.user.response.ContentRequestResponseDto;
-import com.yourmode.yourmodebackend.domain.request.dto.user.response.ContentRequestSummaryDto;
+import com.yourmode.yourmodebackend.domain.request.dto.user.response.UserContentRequestSummaryDto;
+import com.yourmode.yourmodebackend.domain.request.dto.editor.response.EditorContentRequestSummaryDto;
 import com.yourmode.yourmodebackend.domain.request.service.ContentRequestService;
+import com.yourmode.yourmodebackend.domain.user.enums.UserRole;
 import com.yourmode.yourmodebackend.global.common.base.BaseResponse;
 import com.yourmode.yourmodebackend.global.config.security.auth.CurrentUser;
 import com.yourmode.yourmodebackend.global.config.security.auth.PrincipalDetails;
@@ -12,6 +15,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -45,11 +49,11 @@ public class ContentRequestController {
             description = "현재 로그인한 사용자가 작성한 모든 컨텐츠 요청서 목록을 조회합니다."
     )
     @GetMapping("/my-requests")
-    public ResponseEntity<BaseResponse<List<ContentRequestSummaryDto>>> getMyRequests(
+    public ResponseEntity<BaseResponse<List<UserContentRequestSummaryDto>>> getMyRequests(
             @CurrentUser PrincipalDetails userDetails
     ) {
         Long userId = userDetails.getUserId();
-        List<ContentRequestSummaryDto> requestSummaryDto = contentRequestService.getRequestsByUserId(userId);
+        List<UserContentRequestSummaryDto> requestSummaryDto = contentRequestService.getRequestsByUserId(userId);
         return ResponseEntity.ok(BaseResponse.onSuccess(requestSummaryDto));
     }
 
@@ -58,12 +62,12 @@ public class ContentRequestController {
             description = "컨텐츠 요청 ID로 단일 컨텐츠 요청서를 조회합니다."
     )
     @GetMapping("/my-requests/{id}")
-    public ResponseEntity<BaseResponse<ContentRequestDetailDto>> getContentRequestById(
-            @PathVariable Integer id,
+    public ResponseEntity<BaseResponse<UserContentRequestDetailDto>> getContentRequestById(
+            @PathVariable Long id,
             @CurrentUser PrincipalDetails userDetails
     ) {
         Long userId = userDetails.getUserId();
-        ContentRequestDetailDto requestDetailDto = contentRequestService.getContentRequestById(id, userId);
+        UserContentRequestDetailDto requestDetailDto = contentRequestService.getContentRequestById(id, userId);
         return ResponseEntity.ok(BaseResponse.onSuccess(requestDetailDto));
     }
 
@@ -79,9 +83,12 @@ public class ContentRequestController {
      * - 전체 요청 목록을 필터링/정렬 옵션과 함께 조회할 수 있음 (예: 상태, 공개 여부 등)
      */
     @GetMapping("/all")
-    public ResponseEntity<BaseResponse<List<ContentRequestSummaryDto>>> getAllRequestsForEditor() {
-        // TODO: 에디터 권한 확인 및 전체 요청 리스트 조회 구현
-        return null;
+    public ResponseEntity<BaseResponse<List<EditorContentRequestSummaryDto>>> getAllRequestsForEditor(
+            @CurrentUser PrincipalDetails userDetails
+    ) {
+        validateAdminAccess(userDetails);
+        List<EditorContentRequestSummaryDto> requestList = contentRequestService.getAllRequestsForEditor();
+        return ResponseEntity.ok(BaseResponse.onSuccess(requestList));
     }
 
     /**
@@ -90,9 +97,13 @@ public class ContentRequestController {
      * - 사용자 프로필, 요청 상태 이력 등 포함
      */
     @GetMapping("/all/{id}")
-    public ResponseEntity<BaseResponse<ContentRequestDetailDto>> getRequestDetailForEditor(@PathVariable Integer id) {
-        // TODO: 에디터 권한 확인 및 요청 상세 정보 조회 구현
-        return null;
+    public ResponseEntity<BaseResponse<EditorContentRequestDetailDto>> getRequestDetailForEditor(
+            @PathVariable Long id,
+            @CurrentUser PrincipalDetails userDetails
+    ) {
+        validateAdminAccess(userDetails);
+        EditorContentRequestDetailDto detailDto = contentRequestService.getContentRequestDetailForEditor(id);
+        return ResponseEntity.ok(BaseResponse.onSuccess(detailDto));
     }
 
     /**
@@ -100,17 +111,22 @@ public class ContentRequestController {
      * - 에디터가 해당 요청의 상태를 업데이트
      * - 상태 변경 이력에 기록됨 (변경 시점, 에디터 ID 등)
      */
-    @PatchMapping("/{id}/status")
     public ResponseEntity<BaseResponse<Void>> updateRequestStatus(
-            @PathVariable Integer id,
+            @PathVariable Long id,
             @RequestParam String statusCode,
             @CurrentUser PrincipalDetails userDetails
     ) {
-        // TODO: 에디터 권한 확인 및 상태 변경 로직 구현
-        return null;
+        validateAdminAccess(userDetails);
+        contentRequestService.updateStatus(id, statusCode, userDetails.getUserId());
+        return ResponseEntity.ok(BaseResponse.onSuccess(null));
     }
 
-
+    // 내부 메서드: 관리자 권한 체크
+    private void validateAdminAccess(PrincipalDetails userDetails) {
+        if (userDetails.getRole() != UserRole.ADMIN) {
+            throw new AccessDeniedException("관리자만 접근할 수 있습니다.");
+        }
+    }
 
 
 }

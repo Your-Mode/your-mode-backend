@@ -1,6 +1,6 @@
 package com.yourmode.yourmodebackend.domain.request.dto.user.response;
 
-import com.yourmode.yourmodebackend.domain.request.dto.user.request.ContentRequestStatusHistoryDto;
+import com.yourmode.yourmodebackend.domain.request.dto.ContentRequestStatusHistoryDto;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,7 +10,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ContentRequestSummaryDto {
+public class UserContentRequestSummaryDto {
 
     private Long id;
     private String bodyFeature;
