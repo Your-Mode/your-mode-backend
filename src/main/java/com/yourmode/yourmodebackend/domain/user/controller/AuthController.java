@@ -260,7 +260,6 @@ public class AuthController {
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
-
     @Value("${kakao.client-id}")
     private String clientId;
     @Value("${kakao.redirect-uri}")
@@ -653,6 +652,12 @@ public class AuthController {
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
+    /**
+     * 액세스 토큰 재발급 API
+     * <p>
+     * - 리프레시 토큰을 이용하여 새로운 액세스 토큰을 발급합니다.
+     * - 유효한 리프레시 토큰이 필요하며, 유저 정보도 함께 반환됩니다.
+     **/
     @Operation(summary = "로그아웃", description = "현재 로그인된 사용자의 리프레시 토큰을 삭제하여 로그아웃 처리합니다.")
     @ApiResponses({
             @ApiResponse(
@@ -722,6 +727,7 @@ public class AuthController {
         return ResponseEntity.ok(BaseResponse.onSuccess(userIdResponseDto));
     }
 
-    // todo: 탈퇴, 유저 프로필 변경 등
+    // 유저 프로필 변경(이름, 전화번호, 키, 몸무게, 체형타입을 바꿀 수 있음
+    // 처음에는 기본 정보를 불러오고 그 이후에 변경가능 한 것
 
 }

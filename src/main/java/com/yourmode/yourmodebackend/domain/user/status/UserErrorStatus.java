@@ -27,13 +27,15 @@ public enum UserErrorStatus implements BaseCodeInterface {
     KAKAO_EMAIL_NOT_FOUND(HttpStatus.BAD_REQUEST, "KAKAO-400-001", "카카오 계정에서 이메일을 받아올 수 없습니다."),
 
     // 로그인
-    AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "AUTH-401-001", "인증에 실패했습니다."),
-    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "AUTH-401-002", "이메일 또는 비밀번호가 올바르지 않습니다."),
+    AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "AUTH-401-001", "인증에 실패했습니다."), // 기타 인증 실패
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "AUTH-401-002", "이메일 또는 비밀번호가 올바르지 않습니다."), // 로그인 시도 실패
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH-404-001", "해당 이메일의 사용자를 찾을 수 없습니다."),
+    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH-404-004", "사용자 프로필을 찾을 수 없습니다."),
+    BODY_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH-404-005", "해당 체형 정보를 찾을 수 없습니다."),
 
     // 토큰
-    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-401-003", "토큰이 만료되었습니다."),
-    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-401-003", "유효하지 않은 토큰입니다."),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-401-003", "리프레시 토큰이 만료되었습니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-401-005", "유효하지 않은 토큰입니다."),
 
     // 로그아웃 관련 에러
     LOGOUT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH-500-005", "로그아웃 처리 중 오류가 발생했습니다."),
