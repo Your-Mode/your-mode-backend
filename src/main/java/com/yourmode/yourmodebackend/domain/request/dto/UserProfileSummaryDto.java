@@ -3,7 +3,6 @@ package com.yourmode.yourmodebackend.domain.request.dto;
 import lombok.*;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

@@ -2,9 +2,8 @@ package com.yourmode.yourmodebackend.domain.request.dto.editor.request;
 
 import lombok.*;
 
-// 요청 상태 변경에 사용할 요청 DTO (필요시)
+// 요청 상태 변경에 사용할 요청 DTO 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

@@ -11,15 +11,15 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 public class ContentRequestResponseDto {
-    private Long id;
-    private String situation;
-    private String bodyFeature;
-    private String recommendedStyle;
-    private String avoidedStyle;
-    private Integer budget;
-    private Boolean isPublic;
-    private String status;
-    private List<String> itemCategoryNames;
-    private LocalDateTime createdAt;
+    private final Long id;
+    private final String situation;
+    private final String bodyFeature;
+    private final String recommendedStyle;
+    private final String avoidedStyle;
+    private final Integer budget;
+    private final Boolean isPublic;
+    private final String status;
+    private final List<String> itemCategoryNames;
+    private final LocalDateTime createdAt;
 }
 
