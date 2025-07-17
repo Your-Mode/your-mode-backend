@@ -13,9 +13,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class ContentRequestStatusHistory {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(name = "changed_at", nullable = false, updatable = false)
     private LocalDateTime changedAt;

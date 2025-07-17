@@ -7,6 +7,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "content_requests")
@@ -15,17 +17,10 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 public class ContentRequest {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
-    // 삭제 필요
-    @Column(name = "custom_height")
-    private Float customHeight;
-
-    // 삭제 필요
-    @Column(name = "custom_weight")
-    private Float customWeight;
+    private Long id;
 
     @Column(name = "body_feature", length = 200)
     private String bodyFeature;
@@ -61,15 +56,19 @@ public class ContentRequest {
     // N:M content_requests_item_categories
     @ManyToMany
     @JoinTable(
-            name = "content_requests_item_categories",
-            joinColumns = @JoinColumn(name = "content_request_id"),
-            inverseJoinColumns = @JoinColumn(name = "item_category_id")
+            name = "content_requests_item_categories", // 중간 테이블명
+            joinColumns = @JoinColumn(name = "content_request_id"), // 현재 엔티티의 FK
+            inverseJoinColumns = @JoinColumn(name = "item_category_id") // 상대 엔티티의 FK
     )
     private Set<ItemCategory> itemCategories = new HashSet<>();
 
+    // DB에 저장되기 전
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
-        if (isPublic == null) isPublic = true;
     }
+
+    @OneToMany(mappedBy = "contentRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ContentRequestStatusHistory> statusHistories = new ArrayList<>();
+
 }
