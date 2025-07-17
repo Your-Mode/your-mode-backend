@@ -727,7 +727,4 @@ public class AuthController {
         return ResponseEntity.ok(BaseResponse.onSuccess(userIdResponseDto));
     }
 
-    // 유저 프로필 변경(이름, 전화번호, 키, 몸무게, 체형타입을 바꿀 수 있음
-    // 처음에는 기본 정보를 불러오고 그 이후에 변경가능 한 것
-
 }

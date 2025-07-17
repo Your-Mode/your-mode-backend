@@ -27,6 +27,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
+import com.yourmode.yourmodebackend.domain.request.status.RequestErrorStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -44,9 +46,9 @@ public class UserContentRequestServiceImpl implements UserContentRequestService 
     @Transactional
     public ContentRequestResponseDto createContentRequest(ContentRequestCreateDto dto, Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+                .orElseThrow(() -> new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND));
         RequestStatusCode initialStatus = requestStatusCodeRepository.findByCodeName("신청 접수")
-                .orElseThrow(() -> new IllegalArgumentException("Initial status not found"));
+                .orElseThrow(() -> new RestApiException(RequestErrorStatus.INVALID_REQUEST_STATUS));
         Set<ItemCategory> itemCategories = new HashSet<>();
         if (dto.getItemCategoryIds() != null && !dto.getItemCategoryIds().isEmpty()) {
             itemCategories = new HashSet<>(itemCategoryRepository.findAllById(dto.getItemCategoryIds()));
@@ -112,7 +114,7 @@ public class UserContentRequestServiceImpl implements UserContentRequestService 
     @Override
     public UserContentRequestDetailDto getContentRequestById(Long id, Long userId) {
         ContentRequest request = contentRequestRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("ContentRequest not found with id: " + id));
+                .orElseThrow(() -> new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND));
         List<Long> itemCategoryIds = request.getItemCategories().stream()
                 .map(ItemCategory::getId)
                 .collect(Collectors.toList());

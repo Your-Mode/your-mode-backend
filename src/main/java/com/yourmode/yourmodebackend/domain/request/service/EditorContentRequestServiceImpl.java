@@ -21,6 +21,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
+import com.yourmode.yourmodebackend.domain.request.status.RequestErrorStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -124,11 +126,11 @@ public class EditorContentRequestServiceImpl implements EditorContentRequestServ
     @Transactional
     public void updateStatus(Long requestId, String statusCode, Long editorId) {
         ContentRequest request = contentRequestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("컨텐츠 요청을 찾을 수 없습니다. id=" + requestId));
+                .orElseThrow(() -> new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND));
         RequestStatusCode newStatus = requestStatusCodeRepository.findByCodeName(statusCode)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 상태 코드입니다: " + statusCode));
+                .orElseThrow(() -> new RestApiException(RequestErrorStatus.INVALID_REQUEST_STATUS));
         User editor = userRepository.findById(editorId)
-                .orElseThrow(() -> new IllegalArgumentException("에디터 사용자를 찾을 수 없습니다. id=" + editorId));
+                .orElseThrow(() -> new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND));
         request.setStatus(newStatus);
         contentRequestRepository.save(request);
         ContentRequestStatusHistory history = ContentRequestStatusHistory.builder()
