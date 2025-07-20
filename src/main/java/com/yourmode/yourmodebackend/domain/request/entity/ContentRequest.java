@@ -70,6 +70,7 @@ public class ContentRequest {
     }
 
     @OneToMany(mappedBy = "contentRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ContentRequestStatusHistory> statusHistories = new ArrayList<>();
 
 }
