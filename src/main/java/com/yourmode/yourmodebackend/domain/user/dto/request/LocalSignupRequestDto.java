@@ -17,7 +17,7 @@ import lombok.AllArgsConstructor;
 public class LocalSignupRequestDto implements CommonSignupRequest{
 
     // User 정보
-    @Schema(description = "이메일", example = "test@example.com")
+    @Schema(description = "이메일", example = "test123@example.com")
     @NotBlank(message = "이메일은 필수입니다.")
     @Email(message = "이메일 형식이 올바르지 않습니다.")
     private String email;

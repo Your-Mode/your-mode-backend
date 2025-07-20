@@ -246,6 +246,9 @@ public class AuthServiceImpl implements AuthService{
      * @throws RestApiException DB 저장 중 오류 발생 시
      */
     private void saveUserToken(User user, String refreshToken, LocalDateTime expiredAt) {
+        // 기존 토큰 모두 삭제
+        userTokenRepository.deleteByUserId(user.getId());
+
         UserToken userToken = new UserToken();
         userToken.setUser(user);
         userToken.setRefreshToken(refreshToken);
