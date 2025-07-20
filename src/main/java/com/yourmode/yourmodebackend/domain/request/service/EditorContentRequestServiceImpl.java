@@ -91,14 +91,7 @@ public class EditorContentRequestServiceImpl implements EditorContentRequestServ
                             ? request.getUser().getProfile().getBodyType().getName() : null)
                     .build();
         }
-        List<ContentRequestStatusHistoryDto> historyDtos = request.getStatusHistories().stream()
-                .map(history -> ContentRequestStatusHistoryDto.builder()
-                        .changedAt(history.getChangedAt())
-                        .statusName(history.getStatus().getCodeName())
-                        .editorId(history.getEditor() != null ? history.getEditor().getId() : null)
-                        .editorName(history.getEditor() != null ? history.getEditor().getName() : null)
-                        .build())
-                .collect(Collectors.toList());
+
         List<Integer> categoryIds = request.getItemCategories().stream()
                 .map(ItemCategory::getId)
                 .collect(Collectors.toList());

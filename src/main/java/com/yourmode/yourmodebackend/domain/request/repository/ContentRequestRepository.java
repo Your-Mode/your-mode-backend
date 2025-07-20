@@ -1,7 +1,6 @@
 package com.yourmode.yourmodebackend.domain.request.repository;
 
 import com.yourmode.yourmodebackend.domain.request.entity.ContentRequest;
-import com.yourmode.yourmodebackend.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

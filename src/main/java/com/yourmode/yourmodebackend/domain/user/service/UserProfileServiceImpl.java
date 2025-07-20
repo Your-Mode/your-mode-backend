@@ -13,7 +13,6 @@ import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.yourmode.yourmodebackend.domain.user.dto.request.PasswordUpdateRequestDto;
 import com.yourmode.yourmodebackend.domain.user.entity.UserCredential;
 import com.yourmode.yourmodebackend.domain.user.repository.UserCredentialRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;

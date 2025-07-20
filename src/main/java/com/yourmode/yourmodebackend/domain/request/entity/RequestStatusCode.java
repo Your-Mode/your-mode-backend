@@ -18,6 +18,7 @@ public class RequestStatusCode {
     private String codeName;
 
     @Column(name = "status_order", nullable = false)
+    @Builder.Default
     private Integer statusOrder = 0;
 
 }

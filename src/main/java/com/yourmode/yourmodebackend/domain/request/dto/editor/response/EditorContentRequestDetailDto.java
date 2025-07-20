@@ -1,7 +1,6 @@
 package com.yourmode.yourmodebackend.domain.request.dto.editor.response;
 
 import com.yourmode.yourmodebackend.domain.request.dto.UserProfileSummaryDto;
-import com.yourmode.yourmodebackend.domain.user.entity.User;
 import lombok.Getter;
 import lombok.Builder;
 

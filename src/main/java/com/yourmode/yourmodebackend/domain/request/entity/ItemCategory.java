@@ -22,5 +22,6 @@ public class ItemCategory {
 
     // N:M content_requests_item_categories 양방향 관계
     @ManyToMany(mappedBy = "itemCategories")
+    @Builder.Default
     private Set<ContentRequest> contentRequests = new HashSet<>();
 }
