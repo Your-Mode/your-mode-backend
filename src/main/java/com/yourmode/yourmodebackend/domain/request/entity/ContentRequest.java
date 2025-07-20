@@ -41,6 +41,7 @@ public class ContentRequest {
     private LocalDateTime createdAt;
 
     @Column(name = "is_public", nullable = false)
+    @Builder.Default
     private Boolean isPublic = true;
 
     // user_id FK → users(id)
