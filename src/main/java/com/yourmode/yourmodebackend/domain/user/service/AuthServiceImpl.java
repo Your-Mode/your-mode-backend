@@ -107,10 +107,9 @@ public class AuthServiceImpl implements AuthService{
 
             saveUserToken(user, refresh.token(), refresh.expiry());
 
-            // 응답용 유저 정보 DTO 생성 (이름, 역할, 체형ID 포함)
+            // 응답용 유저 정보 DTO 생성 (이름, 역할 포함)
             UserInfoDto userInfo = UserInfoDto.builder()
                     .name(principalDetails.getName())
-                    .role(principalDetails.getRole())
                     .role(principalDetails.getRole())
                     .build();
 
@@ -397,9 +396,19 @@ public class AuthServiceImpl implements AuthService{
 
         // 카카오 사용자 정보 조회
         Map<String, Object> kakaoUserInfo = requestUserInfoWithKakao(accessToken);
-        Map<String, Object> kakaoAccount = (Map<String, Object>) kakaoUserInfo.get("kakao_account");
+        Object kakaoAccountObj = kakaoUserInfo.get("kakao_account");
+        if (!(kakaoAccountObj instanceof Map)) {
+            throw new RestApiException(UserErrorStatus.KAKAO_USERINFO_REQUEST_FAILED);
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> kakaoAccount = (Map<String, Object>) kakaoAccountObj;
         String email = (String) kakaoAccount.get("email");
-        Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
+        Object profileObj = kakaoAccount.get("profile");
+        if (!(profileObj instanceof Map)) {
+            throw new RestApiException(UserErrorStatus.KAKAO_USERINFO_REQUEST_FAILED);
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> profile = (Map<String, Object>) profileObj;
         String nickname = (String) profile.get("nickname");
 
         // 회원 존재 여부 확인
@@ -473,8 +482,9 @@ public class AuthServiceImpl implements AuthService{
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // JWT 토큰 생성 및 저장
-        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(user.getId(), user.getEmail());
-        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(user.getId(), user.getEmail());
+        Integer userId = user.getId();
+        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId, user.getEmail());
+        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, user.getEmail());
         saveUserToken(user, refresh.token(), refresh.expiry());
 
         UserInfoDto userInfo = UserInfoDto.builder()
