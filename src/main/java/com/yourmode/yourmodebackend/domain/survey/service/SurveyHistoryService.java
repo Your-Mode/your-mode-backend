@@ -4,5 +4,5 @@ import com.yourmode.yourmodebackend.domain.survey.dto.SurveyHistoryWithAnswersRe
 import java.util.List;
 
 public interface SurveyHistoryService {
-    List<SurveyHistoryWithAnswersResponseDto> getSurveyHistoriesWithAnswers(Long userId);
+    List<SurveyHistoryWithAnswersResponseDto> getSurveyHistoriesWithAnswers(Integer userId);
 } 

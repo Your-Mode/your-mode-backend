@@ -37,7 +37,7 @@ public class EditorContentRequestServiceImpl implements EditorContentRequestServ
     @Override
     public List<EditorContentRequestSummaryDto> getAllRequestsForEditor() {
         List<ContentRequest> requests = contentRequestRepository.findAllByOrderByCreatedAtDesc();
-        return requests.stream().map(request -> {
+        return requests.stream().<EditorContentRequestSummaryDto>map(request -> {
             List<ContentRequestStatusHistoryDto> historyDtos = request.getStatusHistories().stream()
                     .map(history -> ContentRequestStatusHistoryDto.builder()
                             .changedAt(history.getChangedAt())
@@ -46,7 +46,7 @@ public class EditorContentRequestServiceImpl implements EditorContentRequestServ
                             .editorName(history.getEditor() != null ? history.getEditor().getName() : null)
                             .build())
                     .collect(Collectors.toList());
-            List<Long> categoryIds = request.getItemCategories().stream()
+            List<Integer> categoryIds = request.getItemCategories().stream()
                     .map(ItemCategory::getId)
                     .collect(Collectors.toList());
             List<String> categoryNames = request.getItemCategories().stream()
@@ -75,7 +75,7 @@ public class EditorContentRequestServiceImpl implements EditorContentRequestServ
     }
 
     @Override
-    public EditorContentRequestDetailDto getContentRequestDetailForEditor(Long id) {
+    public EditorContentRequestDetailDto getContentRequestDetailForEditor(Integer id) {
         Optional<ContentRequest> optionalRequest = contentRequestRepository.findByIdWithUserAndProfile(id);
         if (optionalRequest.isEmpty()) {
             return null;
@@ -99,7 +99,7 @@ public class EditorContentRequestServiceImpl implements EditorContentRequestServ
                         .editorName(history.getEditor() != null ? history.getEditor().getName() : null)
                         .build())
                 .collect(Collectors.toList());
-        List<Long> categoryIds = request.getItemCategories().stream()
+        List<Integer> categoryIds = request.getItemCategories().stream()
                 .map(ItemCategory::getId)
                 .collect(Collectors.toList());
         List<String> categoryNames = request.getItemCategories().stream()
@@ -124,7 +124,7 @@ public class EditorContentRequestServiceImpl implements EditorContentRequestServ
 
     @Override
     @Transactional
-    public void updateStatus(Long requestId, String statusCode, Long editorId) {
+    public void updateStatus(Integer requestId, String statusCode, Integer editorId) {
         ContentRequest request = contentRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND));
         RequestStatusCode newStatus = requestStatusCodeRepository.findByCodeName(statusCode)

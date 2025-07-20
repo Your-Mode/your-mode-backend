@@ -10,5 +10,5 @@ import lombok.*;
 public class UpdateRequestStatusDto {
     private Integer requestId;   // 컨텐츠 요청 ID
     private String statusCode;   // 변경할 상태 코드
-    private Long editorId;       // 변경한 에디터(사용자) ID
+    private Integer editorId;       // 변경한 에디터(사용자) ID
 }

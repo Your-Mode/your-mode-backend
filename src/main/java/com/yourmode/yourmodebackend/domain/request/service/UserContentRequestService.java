@@ -7,7 +7,7 @@ import com.yourmode.yourmodebackend.domain.request.dto.user.response.UserContent
 import java.util.List;
 
 public interface UserContentRequestService {
-    ContentRequestResponseDto createContentRequest(ContentRequestCreateDto dto, Long userId);
-    List<UserContentRequestSummaryDto> getRequestsByUserId(Long userId);
-    UserContentRequestDetailDto getContentRequestById(Long id, Long userId);
+    ContentRequestResponseDto createContentRequest(ContentRequestCreateDto dto, Integer userId);
+    List<UserContentRequestSummaryDto> getRequestsByUserId(Integer userId);
+    UserContentRequestDetailDto getContentRequestById(Integer id, Integer userId);
 } 

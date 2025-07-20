@@ -65,5 +65,5 @@ public class LocalSignupRequestDto implements CommonSignupRequest{
 
     @Schema(description = "체형 ID (1: 스트레이트, 2: 웨이브, 3: 내추럴, 4: 선택안함)", example = "1")
     @NotNull(message = "체형을 선택해주세요.")
-    private Long bodyTypeId;
+    private Integer bodyTypeId;
 }

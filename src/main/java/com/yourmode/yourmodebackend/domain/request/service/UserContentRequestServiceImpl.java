@@ -44,7 +44,7 @@ public class UserContentRequestServiceImpl implements UserContentRequestService 
 
     @Override
     @Transactional
-    public ContentRequestResponseDto createContentRequest(ContentRequestCreateDto dto, Long userId) {
+    public ContentRequestResponseDto createContentRequest(ContentRequestCreateDto dto, Integer userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND));
         RequestStatusCode initialStatus = requestStatusCodeRepository.findByCodeName("신청 접수")
@@ -88,7 +88,7 @@ public class UserContentRequestServiceImpl implements UserContentRequestService 
     }
 
     @Override
-    public List<UserContentRequestSummaryDto> getRequestsByUserId(Long userId) {
+    public List<UserContentRequestSummaryDto> getRequestsByUserId(Integer userId) {
         List<ContentRequest> requests = contentRequestRepository.findAllByUserId(userId);
         return requests.stream().map(request -> {
             List<ContentRequestStatusHistoryDto> historyDtos = request.getStatusHistories().stream()
@@ -112,10 +112,10 @@ public class UserContentRequestServiceImpl implements UserContentRequestService 
     }
 
     @Override
-    public UserContentRequestDetailDto getContentRequestById(Long id, Long userId) {
+    public UserContentRequestDetailDto getContentRequestById(Integer id, Integer userId) {
         ContentRequest request = contentRequestRepository.findById(id)
                 .orElseThrow(() -> new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND));
-        List<Long> itemCategoryIds = request.getItemCategories().stream()
+        List<Integer> itemCategoryIds = request.getItemCategories().stream()
                 .map(ItemCategory::getId)
                 .collect(Collectors.toList());
         List<String> itemCategoryNames = request.getItemCategories().stream()

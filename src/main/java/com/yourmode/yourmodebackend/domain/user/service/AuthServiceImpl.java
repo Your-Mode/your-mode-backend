@@ -98,7 +98,7 @@ public class AuthServiceImpl implements AuthService{
 
             PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
 
-            Long userId = principalDetails.getUserId();
+            Integer userId = principalDetails.getUserId();
             String email = principalDetails.getEmail();
 
             // JWT 액세스 토큰 및 리프레시 토큰 생성
@@ -283,7 +283,7 @@ public class AuthServiceImpl implements AuthService{
             // 인증 성공 시 인증 객체에서 사용자 정보 획득
             PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
 
-            Long userId = principalDetails.getUserId();
+            Integer userId = principalDetails.getUserId();
             String email = principalDetails.getEmail();
 
             // JWT 액세스 토큰 및 리프레시 토큰 생성
@@ -416,7 +416,7 @@ public class AuthServiceImpl implements AuthService{
         User user = userRepository.findByEmailWithProfile(email)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
 
-        Long userId = user.getId();
+        Integer userId = user.getId();
 
         PrincipalDetails principalDetails = new PrincipalDetails(user, "");
         UsernamePasswordAuthenticationToken authentication =
@@ -510,7 +510,7 @@ public class AuthServiceImpl implements AuthService{
 
         // 리프레시 토큰에서 사용자 정보 추출
         String email = jwtProvider.getEmailFromToken(refreshToken);
-        Long userId = jwtProvider.getUserIdFromToken(refreshToken);
+        Integer userId = jwtProvider.getUserIdFromToken(refreshToken);
 
         // DB에서 리프레시 토큰 확인
         UserToken savedToken = userTokenRepository.findByUserId(userId)
@@ -554,7 +554,7 @@ public class AuthServiceImpl implements AuthService{
      */
     @Transactional
     public UserIdResponseDto logout(PrincipalDetails principal) {
-        Long userId = principal.getUserId();
+        Integer userId = principal.getUserId();
         try {
             int deletedCount = userTokenRepository.deleteByUserId(userId);
             if (deletedCount == 0) {

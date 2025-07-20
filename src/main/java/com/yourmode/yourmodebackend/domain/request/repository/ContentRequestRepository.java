@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ContentRequestRepository extends JpaRepository<ContentRequest, Long> {
-    List<ContentRequest> findAllByUserId(Long userId);
+public interface ContentRequestRepository extends JpaRepository<ContentRequest, Integer> {
+    List<ContentRequest> findAllByUserId(Integer userId);
     List<ContentRequest> findAllByOrderByCreatedAtDesc();
 
     @Query("SELECT cr FROM ContentRequest cr " +
@@ -22,6 +22,6 @@ public interface ContentRequestRepository extends JpaRepository<ContentRequest, 
             "LEFT JOIN FETCH cr.statusHistories sh " +
             "LEFT JOIN FETCH sh.editor e " +
             "WHERE cr.id = :id")
-    Optional<ContentRequest> findByIdWithUserAndProfile(@Param("id") Long id);
+    Optional<ContentRequest> findByIdWithUserAndProfile(@Param("id") Integer id);
 
 }

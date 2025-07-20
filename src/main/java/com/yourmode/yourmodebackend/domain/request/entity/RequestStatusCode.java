@@ -12,7 +12,7 @@ import lombok.*;
 public class RequestStatusCode {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "code_name", nullable = false, length = 50)
     private String codeName;

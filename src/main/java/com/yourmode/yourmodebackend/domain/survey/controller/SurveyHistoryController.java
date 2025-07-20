@@ -25,11 +25,11 @@ public class SurveyHistoryController {
 
     @Operation(summary = "설문 내역+답변 전체 조회", description = "특정 사용자의 모든 설문 내역과 각 내역의 답변(질문/옵션/키값 포함)을 반환합니다.")
     @GetMapping("/user/{userId}")
-    public ResponseEntity<BaseResponse<List<SurveyHistoryWithAnswersResponseDto>>> getSurveyHistoriesWithAnswers(@PathVariable Long userId) {
+    public ResponseEntity<BaseResponse<List<SurveyHistoryWithAnswersResponseDto>>> getSurveyHistoriesWithAnswers(@PathVariable Integer userId) {
         List<SurveyHistory> histories = surveyHistoryRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
-        List<SurveyHistoryWithAnswersResponseDto> result = histories.stream().map(h ->
+        List<SurveyHistoryWithAnswersResponseDto> result = histories.stream().<SurveyHistoryWithAnswersResponseDto>map(h ->
             SurveyHistoryWithAnswersResponseDto.builder()
-                .historyId(h.getId().longValue())
+                .historyId(h.getId())
                 .createdAt(h.getCreatedAt())
                 .answers(h.getAnswers().stream().map(a ->
                     SurveyAnswerResponseDto.builder()

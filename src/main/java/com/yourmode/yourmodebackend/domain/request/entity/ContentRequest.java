@@ -20,7 +20,7 @@ public class ContentRequest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "body_feature", length = 200)
     private String bodyFeature;

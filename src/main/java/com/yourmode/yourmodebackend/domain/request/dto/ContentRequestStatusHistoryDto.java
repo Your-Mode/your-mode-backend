@@ -10,6 +10,6 @@ import java.time.LocalDateTime;
 public class ContentRequestStatusHistoryDto {
     private LocalDateTime changedAt;
     private String statusName;
-    private Long editorId;
+    private Integer editorId;
     private String editorName;
 }

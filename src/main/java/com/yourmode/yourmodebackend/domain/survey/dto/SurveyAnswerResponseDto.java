@@ -19,5 +19,5 @@ public class SurveyAnswerResponseDto {
     @Schema(description = "옵션 내용", example = "스트레이트형")
     private String optionContent;
     @Schema(description = "체형 타입 ID", example = "1")
-    private Long bodyTypeId;
+    private Integer bodyTypeId;
 } 

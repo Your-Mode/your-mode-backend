@@ -15,11 +15,11 @@ public class SurveyHistoryServiceImpl implements SurveyHistoryService {
     private final SurveyHistoryRepository surveyHistoryRepository;
 
     @Override
-    public List<SurveyHistoryWithAnswersResponseDto> getSurveyHistoriesWithAnswers(Long userId) {
+    public List<SurveyHistoryWithAnswersResponseDto> getSurveyHistoriesWithAnswers(Integer userId) {
         List<SurveyHistory> histories = surveyHistoryRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
-        return histories.stream().map(h ->
+        return histories.stream().<SurveyHistoryWithAnswersResponseDto>map(h ->
             SurveyHistoryWithAnswersResponseDto.builder()
-                .historyId(h.getId().longValue())
+                .historyId(h.getId())
                 .createdAt(h.getCreatedAt())
                 .answers(h.getAnswers().stream().map(a ->
                     SurveyAnswerResponseDto.builder()

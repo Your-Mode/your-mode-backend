@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
-public interface SurveyHistoryRepository extends JpaRepository<SurveyHistory, Long> {
+public interface SurveyHistoryRepository extends JpaRepository<SurveyHistory, Integer> {
     @EntityGraph(attributePaths = {"answers.surveyQuestion", "answers.surveyOption"})
-    List<SurveyHistory> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+    List<SurveyHistory> findAllByUserIdOrderByCreatedAtDesc(Integer userId);
 } 

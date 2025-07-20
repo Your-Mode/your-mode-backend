@@ -35,7 +35,7 @@ public class UserProfileServiceImpl implements UserProfileService {
      * @throws RestApiException USER_NOT_FOUND, PROFILE_NOT_FOUND 등
      */
     @Transactional(readOnly = true)
-    public UserProfileResponseDto getMyProfile(Long userId) {
+    public UserProfileResponseDto getMyProfile(Integer userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
 
@@ -60,7 +60,7 @@ public class UserProfileServiceImpl implements UserProfileService {
      * @throws RestApiException USER_NOT_FOUND, PROFILE_NOT_FOUND, BODY_TYPE_NOT_FOUND 등
      */
     @Transactional
-    public UserProfileResponseDto updateMyProfile(Long userId, UserProfileUpdateRequestDto dto) {
+    public UserProfileResponseDto updateMyProfile(Integer userId, UserProfileUpdateRequestDto dto) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
 
@@ -95,7 +95,7 @@ public class UserProfileServiceImpl implements UserProfileService {
      * @throws RestApiException USER_NOT_FOUND, CREDENTIAL_NOT_FOUND 등
      */
     @Transactional
-    public void updatePassword(Long userId, String newPassword) {
+    public void updatePassword(Integer userId, String newPassword) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
         UserCredential credential = userCredentialRepository.findByUser(user)

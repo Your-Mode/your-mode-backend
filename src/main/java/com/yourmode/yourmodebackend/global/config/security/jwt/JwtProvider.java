@@ -32,15 +32,15 @@ public class JwtProvider {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    public JwtWithExpiry generateAccessToken(Long userId, String email) {
+    public JwtWithExpiry generateAccessToken(Integer userId, String email) {
         return generateTokenWithExpiry(userId, email, accessTokenExpiration);
     }
 
-    public JwtWithExpiry generateRefreshToken(Long userId, String email) {
+    public JwtWithExpiry generateRefreshToken(Integer userId, String email) {
         return generateTokenWithExpiry(userId, email, refreshTokenExpiration);
     }
 
-    private JwtWithExpiry generateTokenWithExpiry(Long userId,  String email, long expirationMillis) {
+    private JwtWithExpiry generateTokenWithExpiry(Integer userId,  String email, long expirationMillis) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMillis);
 
@@ -68,13 +68,13 @@ public class JwtProvider {
         }
     }
 
-    public Long getUserIdFromToken(String token) {
+    public Integer getUserIdFromToken(String token) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-        return Long.parseLong(claims.getSubject());
+        return Integer.parseInt(claims.getSubject());
     }
 
     public String getEmailFromToken(String token) {
@@ -86,7 +86,7 @@ public class JwtProvider {
         return claims.get("email", String.class);
     }
 
-    public Long extractUserId(String authorizationHeader) {
+    public Integer extractUserId(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             throw new IllegalArgumentException("Invalid Authorization header");
         }

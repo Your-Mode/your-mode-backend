@@ -19,7 +19,7 @@ public class UserToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "refresh_token", nullable = false)
     private String refreshToken;

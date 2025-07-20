@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 public class ContentRequestResponseDto {
-    private final Long id;
+    private final Integer id;
     private final String situation;
     private final String bodyFeature;
     private final String recommendedStyle;

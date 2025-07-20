@@ -12,5 +12,5 @@ public interface CommonSignupRequest {
     Float getHeight();
     Float getWeight();
     Gender getGender();
-    Long getBodyTypeId();
+    Integer getBodyTypeId();
 }
