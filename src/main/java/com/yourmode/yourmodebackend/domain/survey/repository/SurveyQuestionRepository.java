@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
-public interface SurveyQuestionRepository extends JpaRepository<SurveyQuestion, Long> {
+public interface SurveyQuestionRepository extends JpaRepository<SurveyQuestion, Integer> {
     @EntityGraph(attributePaths = "options")
     List<SurveyQuestion> findAllByOrderByOrderNumberAsc();
 } 
