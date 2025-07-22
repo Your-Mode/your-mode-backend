@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/surveys")
@@ -246,7 +247,7 @@ public class SurveyController {
     })
     @PostMapping("/answers/bulk")
     public ResponseEntity<BaseResponse<String>> saveSurveyAnswersBulk(
-            @RequestBody SurveyAnswersSubmitRequestDto dto,
+            @RequestBody @Valid SurveyAnswersSubmitRequestDto dto,
             @CurrentUser PrincipalDetails userDetails
     ) {
         System.out.println("answers: " + dto.getAnswers());
