@@ -246,7 +246,7 @@ public class UserContentRequestController {
             @Valid @RequestBody ContentRequestCreateDto dto,
             @CurrentUser PrincipalDetails userDetails
     ) {
-        Long userId = userDetails.getUserId();
+        Integer userId = userDetails.getUserId();
         ContentRequestResponseDto savedRequest = userContentRequestService.createContentRequest(dto, userId);
         return ResponseEntity.ok(BaseResponse.onSuccess(savedRequest));
     }
@@ -316,7 +316,7 @@ public class UserContentRequestController {
     public ResponseEntity<BaseResponse<List<UserContentRequestSummaryDto>>> getMyRequests(
             @CurrentUser PrincipalDetails userDetails
     ) {
-        Long userId = userDetails.getUserId();
+        Integer userId = userDetails.getUserId();
         List<UserContentRequestSummaryDto> requestSummaryDto = userContentRequestService.getRequestsByUserId(userId);
         return ResponseEntity.ok(BaseResponse.onSuccess(requestSummaryDto));
     }
@@ -384,10 +384,10 @@ public class UserContentRequestController {
     })
     @GetMapping("/my-requests/{id}")
     public ResponseEntity<BaseResponse<UserContentRequestDetailDto>> getContentRequestById(
-            @PathVariable Long id,
+            @PathVariable Integer id,
             @CurrentUser PrincipalDetails userDetails
     ) {
-        Long userId = userDetails.getUserId();
+        Integer userId = userDetails.getUserId();
         UserContentRequestDetailDto requestDetailDto = userContentRequestService.getContentRequestById(id, userId);
         return ResponseEntity.ok(BaseResponse.onSuccess(requestDetailDto));
     }

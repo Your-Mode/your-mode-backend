@@ -13,7 +13,7 @@ import java.util.List;
 public class UserContentRequestDetailDto {
 
     private UserProfileSummaryDto profile;
-    private Long id;
+    private Integer id;
     private String bodyFeature;
     private String situation;
     private String recommendedStyle;
@@ -21,7 +21,7 @@ public class UserContentRequestDetailDto {
     private Integer budget;
     private Boolean isPublic;
 
-    private List<Long> itemCategoryIds;       // 기존 유지 (필요 시)
+    private List<Integer> itemCategoryIds;       // 기존 유지 (필요 시)
     private List<String> itemCategoryNames;
 
     private List<ContentRequestStatusHistoryDto> statusHistories; // 상태 변경 이력

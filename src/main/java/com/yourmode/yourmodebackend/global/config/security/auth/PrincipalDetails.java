@@ -10,7 +10,7 @@ import java.util.Collections;
 
 public class PrincipalDetails implements UserDetails {
 
-    private final Long userId;
+    private final Integer userId;
     private final String email;
     private final String name;
     private final UserRole role;
@@ -25,7 +25,7 @@ public class PrincipalDetails implements UserDetails {
         this.password = passwordHash; // 소셜 로그인일 경우 null
     }
 
-    public Long getUserId() { return userId; }
+    public Integer getUserId() { return userId; }
     public String getEmail() { return email; }
     public String getName() { return name; }
     public UserRole getRole() { return role; }

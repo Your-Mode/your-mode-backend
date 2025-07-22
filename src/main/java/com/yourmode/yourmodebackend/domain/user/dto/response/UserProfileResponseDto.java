@@ -13,6 +13,6 @@ public class UserProfileResponseDto {
     private String phoneNumber;
     private Float height;
     private Float weight;
-    private Long bodyTypeId;
+    private Integer bodyTypeId;
     private Gender gender;
 }

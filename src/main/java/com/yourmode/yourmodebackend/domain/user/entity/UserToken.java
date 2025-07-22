@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_tokens")
+@Table(name = "user_tokens", uniqueConstraints = @UniqueConstraint(columnNames = "user_id"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,7 +19,7 @@ public class UserToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "refresh_token", nullable = false)
     private String refreshToken;

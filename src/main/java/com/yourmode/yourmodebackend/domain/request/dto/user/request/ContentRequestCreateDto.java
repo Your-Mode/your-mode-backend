@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 
 @Getter
 @NoArgsConstructor
@@ -42,5 +41,5 @@ public class ContentRequestCreateDto {
                     "1=아우터, 2=상의, 3=하의, 4=가방, 5=신발, 6=악세서리, 7=기타",
             example = "[1, 2, 3]"
     )
-    private List<Long> itemCategoryIds;
+    private List<Integer> itemCategoryIds;
 }

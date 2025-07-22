@@ -1,7 +1,6 @@
 package com.yourmode.yourmodebackend.domain.request.repository;
 
 import com.yourmode.yourmodebackend.domain.request.entity.ContentRequest;
-import com.yourmode.yourmodebackend.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,8 +10,8 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ContentRequestRepository extends JpaRepository<ContentRequest, Long> {
-    List<ContentRequest> findAllByUserId(Long userId);
+public interface ContentRequestRepository extends JpaRepository<ContentRequest, Integer> {
+    List<ContentRequest> findAllByUserId(Integer userId);
     List<ContentRequest> findAllByOrderByCreatedAtDesc();
 
     @Query("SELECT cr FROM ContentRequest cr " +
@@ -22,6 +21,6 @@ public interface ContentRequestRepository extends JpaRepository<ContentRequest, 
             "LEFT JOIN FETCH cr.statusHistories sh " +
             "LEFT JOIN FETCH sh.editor e " +
             "WHERE cr.id = :id")
-    Optional<ContentRequest> findByIdWithUserAndProfile(@Param("id") Long id);
+    Optional<ContentRequest> findByIdWithUserAndProfile(@Param("id") Integer id);
 
 }

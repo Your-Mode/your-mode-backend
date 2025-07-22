@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 public class UserContentRequestSummaryDto {
 
-    private Long id;
+    private Integer id;
     private String bodyFeature;
     private String situation;
     private Integer budget;

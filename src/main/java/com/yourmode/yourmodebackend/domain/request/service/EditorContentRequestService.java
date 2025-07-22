@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface EditorContentRequestService {
     List<EditorContentRequestSummaryDto> getAllRequestsForEditor();
-    EditorContentRequestDetailDto getContentRequestDetailForEditor(Long id);
-    void updateStatus(Long requestId, String statusCode, Long editorId);
+    EditorContentRequestDetailDto getContentRequestDetailForEditor(Integer id);
+    void updateStatus(Integer requestId, String statusCode, Integer editorId);
 } 

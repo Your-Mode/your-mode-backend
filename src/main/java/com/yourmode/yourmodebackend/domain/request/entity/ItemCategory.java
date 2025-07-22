@@ -15,12 +15,13 @@ import java.util.Set;
 public class ItemCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(nullable = false, length = 50)
     private String name;
 
     // N:M content_requests_item_categories 양방향 관계
     @ManyToMany(mappedBy = "itemCategories")
+    @Builder.Default
     private Set<ContentRequest> contentRequests = new HashSet<>();
 }

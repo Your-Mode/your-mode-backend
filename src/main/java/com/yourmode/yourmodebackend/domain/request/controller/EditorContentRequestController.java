@@ -179,7 +179,7 @@ public class EditorContentRequestController {
     })
     @GetMapping("/all/{id}")
     public ResponseEntity<BaseResponse<EditorContentRequestDetailDto>> getRequestDetailForEditor(
-            @PathVariable Long id,
+            @PathVariable Integer id,
             @CurrentUser PrincipalDetails userDetails
     ) {
         validateAdminAccess(userDetails);
@@ -307,7 +307,7 @@ public class EditorContentRequestController {
     })
     @PostMapping("/all/{id}/status")
     public ResponseEntity<BaseResponse<Void>> updateRequestStatus(
-            @PathVariable Long id,
+            @PathVariable Integer id,
             @RequestParam String statusCode,
             @CurrentUser PrincipalDetails userDetails
     ) {

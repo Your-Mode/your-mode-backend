@@ -1,7 +1,6 @@
 package com.yourmode.yourmodebackend.domain.request.dto.editor.response;
 
 import com.yourmode.yourmodebackend.domain.request.dto.UserProfileSummaryDto;
-import com.yourmode.yourmodebackend.domain.user.entity.User;
 import lombok.Getter;
 import lombok.Builder;
 
@@ -11,7 +10,7 @@ import java.util.List;
 @Getter
 @Builder
 public class EditorContentRequestDetailDto {
-    private final Long id;
+    private final Integer id;
     private final UserProfileSummaryDto profile;
     private final String bodyFeature;
     private final String situation;
@@ -21,7 +20,7 @@ public class EditorContentRequestDetailDto {
     private final Boolean isPublic;
     private final String status;
 
-    private final List<Long> itemCategoryIds;       // 기존 유지 (필요 시)
+    private final List<Integer> itemCategoryIds;       // 기존 유지 (필요 시)
     private final List<String> itemCategoryNames;
 
     private final LocalDateTime createdAt;

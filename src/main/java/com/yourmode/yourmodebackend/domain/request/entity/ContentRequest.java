@@ -20,7 +20,7 @@ public class ContentRequest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "body_feature", length = 200)
     private String bodyFeature;
@@ -41,6 +41,7 @@ public class ContentRequest {
     private LocalDateTime createdAt;
 
     @Column(name = "is_public", nullable = false)
+    @Builder.Default
     private Boolean isPublic = true;
 
     // user_id FK → users(id)
@@ -60,6 +61,7 @@ public class ContentRequest {
             joinColumns = @JoinColumn(name = "content_request_id"), // 현재 엔티티의 FK
             inverseJoinColumns = @JoinColumn(name = "item_category_id") // 상대 엔티티의 FK
     )
+    @Builder.Default
     private Set<ItemCategory> itemCategories = new HashSet<>();
 
     // DB에 저장되기 전
@@ -69,6 +71,7 @@ public class ContentRequest {
     }
 
     @OneToMany(mappedBy = "contentRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ContentRequestStatusHistory> statusHistories = new ArrayList<>();
 
 }

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface UserCredentialRepository extends JpaRepository<UserCredential, Long> {
+public interface UserCredentialRepository extends JpaRepository<UserCredential, Integer> {
     Optional<UserCredential> findByOauthIdAndOauthProvider(String oauthId, OAuthProvider provider);
     Optional<UserCredential> findByUserEmail(String email); // 연관관계 기반
     Optional<UserCredential> findByUser(User user);

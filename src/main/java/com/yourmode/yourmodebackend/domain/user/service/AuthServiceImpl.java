@@ -98,7 +98,7 @@ public class AuthServiceImpl implements AuthService{
 
             PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
 
-            Long userId = principalDetails.getUserId();
+            Integer userId = principalDetails.getUserId();
             String email = principalDetails.getEmail();
 
             // JWT 액세스 토큰 및 리프레시 토큰 생성
@@ -107,10 +107,9 @@ public class AuthServiceImpl implements AuthService{
 
             saveUserToken(user, refresh.token(), refresh.expiry());
 
-            // 응답용 유저 정보 DTO 생성 (이름, 역할, 체형ID 포함)
+            // 응답용 유저 정보 DTO 생성 (이름, 역할 포함)
             UserInfoDto userInfo = UserInfoDto.builder()
                     .name(principalDetails.getName())
-                    .role(principalDetails.getRole())
                     .role(principalDetails.getRole())
                     .build();
 
@@ -238,20 +237,23 @@ public class AuthServiceImpl implements AuthService{
     }
 
     /**
-     * Refresh Token 저장
-     * DB에 refresh token과 만료 시간을 기록
-     *
-     * @param user    저장 대상 User 객체 (DB에 이미 저장된 상태)
+     * Refresh Token 저장 (Upsert 방식)
+     * 기존 토큰이 있으면 update, 없으면 insert
+     * @param user 저장 대상 User 객체 (DB에 이미 저장된 상태)
      * @param refreshToken 발급된 리프레시 토큰 문자열
      * @param expiredAt 토큰 만료일시
      * @throws RestApiException DB 저장 중 오류 발생 시
      */
     private void saveUserToken(User user, String refreshToken, LocalDateTime expiredAt) {
-        UserToken userToken = new UserToken();
-        userToken.setUser(user);
+        // 기존 토큰이 있으면 update, 없으면 insert
+        UserToken userToken = userTokenRepository.findByUserId(user.getId())
+            .orElse(null);
+        if (userToken == null) {
+            userToken = new UserToken();
+            userToken.setUser(user);
+        }
         userToken.setRefreshToken(refreshToken);
         userToken.setExpiredAt(expiredAt);
-
         try {
             userTokenRepository.save(userToken);
         } catch (DataAccessException e) {
@@ -283,7 +285,7 @@ public class AuthServiceImpl implements AuthService{
             // 인증 성공 시 인증 객체에서 사용자 정보 획득
             PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
 
-            Long userId = principalDetails.getUserId();
+            Integer userId = principalDetails.getUserId();
             String email = principalDetails.getEmail();
 
             // JWT 액세스 토큰 및 리프레시 토큰 생성
@@ -397,9 +399,19 @@ public class AuthServiceImpl implements AuthService{
 
         // 카카오 사용자 정보 조회
         Map<String, Object> kakaoUserInfo = requestUserInfoWithKakao(accessToken);
-        Map<String, Object> kakaoAccount = (Map<String, Object>) kakaoUserInfo.get("kakao_account");
+        Object kakaoAccountObj = kakaoUserInfo.get("kakao_account");
+        if (!(kakaoAccountObj instanceof Map)) {
+            throw new RestApiException(UserErrorStatus.KAKAO_USERINFO_REQUEST_FAILED);
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> kakaoAccount = (Map<String, Object>) kakaoAccountObj;
         String email = (String) kakaoAccount.get("email");
-        Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
+        Object profileObj = kakaoAccount.get("profile");
+        if (!(profileObj instanceof Map)) {
+            throw new RestApiException(UserErrorStatus.KAKAO_USERINFO_REQUEST_FAILED);
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> profile = (Map<String, Object>) profileObj;
         String nickname = (String) profile.get("nickname");
 
         // 회원 존재 여부 확인
@@ -416,7 +428,7 @@ public class AuthServiceImpl implements AuthService{
         User user = userRepository.findByEmailWithProfile(email)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
 
-        Long userId = user.getId();
+        Integer userId = user.getId();
 
         PrincipalDetails principalDetails = new PrincipalDetails(user, "");
         UsernamePasswordAuthenticationToken authentication =
@@ -473,8 +485,9 @@ public class AuthServiceImpl implements AuthService{
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // JWT 토큰 생성 및 저장
-        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(user.getId(), user.getEmail());
-        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(user.getId(), user.getEmail());
+        Integer userId = user.getId();
+        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId, user.getEmail());
+        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, user.getEmail());
         saveUserToken(user, refresh.token(), refresh.expiry());
 
         UserInfoDto userInfo = UserInfoDto.builder()
@@ -510,7 +523,7 @@ public class AuthServiceImpl implements AuthService{
 
         // 리프레시 토큰에서 사용자 정보 추출
         String email = jwtProvider.getEmailFromToken(refreshToken);
-        Long userId = jwtProvider.getUserIdFromToken(refreshToken);
+        Integer userId = jwtProvider.getUserIdFromToken(refreshToken);
 
         // DB에서 리프레시 토큰 확인
         UserToken savedToken = userTokenRepository.findByUserId(userId)
@@ -554,7 +567,7 @@ public class AuthServiceImpl implements AuthService{
      */
     @Transactional
     public UserIdResponseDto logout(PrincipalDetails principal) {
-        Long userId = principal.getUserId();
+        Integer userId = principal.getUserId();
         try {
             int deletedCount = userTokenRepository.deleteByUserId(userId);
             if (deletedCount == 0) {

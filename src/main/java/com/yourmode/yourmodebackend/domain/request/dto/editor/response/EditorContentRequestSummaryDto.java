@@ -12,12 +12,12 @@ import java.util.List;
 @Builder
 public class EditorContentRequestSummaryDto {
     private final UserProfileSummaryDto profile;
-    private final Long id;
+    private final Integer id;
     private final String bodyFeature;
     private final String situation;
     private final String recommendedStyle;
 
-    private final List<Long> itemCategoryIds;       // 기존 유지 (필요 시)
+    private final List<Integer> itemCategoryIds;       // 기존 유지 (필요 시)
     private final List<String> itemCategoryNames;
 
     private final LocalDateTime createdAt;

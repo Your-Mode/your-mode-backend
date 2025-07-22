@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface UserTokenRepository extends JpaRepository<UserToken, Long> {
-    Optional<UserToken> findByUserId(Long userId);
-    int deleteByUserId(Long userId);
+public interface UserTokenRepository extends JpaRepository<UserToken, Integer> {
+    Optional<UserToken> findByUserId(Integer userId);
+    int deleteByUserId(Integer userId);
 }
