@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "survey_histories")
@@ -28,7 +29,8 @@ public class SurveyHistory {
 
     // 해당 설문 이력에 대한 답변들
     @OneToMany(mappedBy = "surveyHistory", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SurveyAnswer> answers;
+    @Builder.Default
+    private List<SurveyAnswer> answers = new ArrayList<>();
 
     // 설문 결과
     @OneToMany(mappedBy = "surveyHistory", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -237,23 +237,23 @@ public class AuthServiceImpl implements AuthService{
     }
 
     /**
-     * Refresh Token 저장
-     * DB에 refresh token과 만료 시간을 기록
-     *
-     * @param user    저장 대상 User 객체 (DB에 이미 저장된 상태)
+     * Refresh Token 저장 (Upsert 방식)
+     * 기존 토큰이 있으면 update, 없으면 insert
+     * @param user 저장 대상 User 객체 (DB에 이미 저장된 상태)
      * @param refreshToken 발급된 리프레시 토큰 문자열
      * @param expiredAt 토큰 만료일시
      * @throws RestApiException DB 저장 중 오류 발생 시
      */
     private void saveUserToken(User user, String refreshToken, LocalDateTime expiredAt) {
-        // 기존 토큰 모두 삭제
-        userTokenRepository.deleteByUserId(user.getId());
-
-        UserToken userToken = new UserToken();
-        userToken.setUser(user);
+        // 기존 토큰이 있으면 update, 없으면 insert
+        UserToken userToken = userTokenRepository.findByUserId(user.getId())
+            .orElse(null);
+        if (userToken == null) {
+            userToken = new UserToken();
+            userToken.setUser(user);
+        }
         userToken.setRefreshToken(refreshToken);
         userToken.setExpiredAt(expiredAt);
-
         try {
             userTokenRepository.save(userToken);
         } catch (DataAccessException e) {

@@ -1,8 +1,11 @@
 package com.yourmode.yourmodebackend.domain.survey.service;
 
-import com.yourmode.yourmodebackend.domain.survey.dto.*;
+import com.yourmode.yourmodebackend.domain.survey.dto.request.*;
+import com.yourmode.yourmodebackend.domain.survey.dto.response.*;
 import com.yourmode.yourmodebackend.domain.survey.entity.*;
 import com.yourmode.yourmodebackend.domain.survey.repository.*;
+import com.yourmode.yourmodebackend.domain.user.entity.User;
+import com.yourmode.yourmodebackend.domain.user.repository.UserRepository;
 import com.yourmode.yourmodebackend.global.common.base.BaseResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,36 +22,43 @@ public class SurveyServiceImpl implements SurveyService {
     private final SurveyQuestionRepository surveyQuestionRepository;
     private final SurveyOptionRepository surveyOptionRepository;
     private final SurveyAnswerRepository surveyAnswerRepository;
+    private final UserRepository userRepository;
     private static final String FASI_API_URL = "FASI_API_URL"; // 실제 주소로 교체
 
     @Override
-    public BaseResponse<SurveyResultFasiApiResponseDto> analyzeSurveyAnswersWithFasi(SurveyTextAnswersRequestDto dto) {
+    public SurveyResultFasiApiResponseDto analyzeSurveyAnswersWithFasi(SurveyTextAnswersRequestDto dto) {
         RestTemplate restTemplate = new RestTemplate();
         Map<String, Object> fasiRequest = new HashMap<>();
         fasiRequest.put("answers", dto.getAnswers());
         fasiRequest.put("gender", dto.getGender());
         fasiRequest.put("height", dto.getHeight());
         fasiRequest.put("weight", dto.getWeight());
-        SurveyResultFasiApiResponseDto result = restTemplate.postForObject(
+        return restTemplate.postForObject(
             FASI_API_URL,
             fasiRequest,
             SurveyResultFasiApiResponseDto.class
         );
-        return BaseResponse.onSuccess(result);
     }
 
     @Override
-    public BaseResponse<List<SurveyQuestionWithOptionsResponseDto>> getAllQuestionsWithOptions() {
-        // 기존 SurveyQuestionServiceImpl의 getAllQuestionsWithOptions() 로직을 여기에 구현
-        // 예시: (실제 로직은 기존 서비스 참고)
-        // return BaseResponse.onSuccess(...);
-        throw new UnsupportedOperationException("구현 필요");
+    public List<SurveyQuestionWithOptionsResponseDto> getAllQuestionsWithOptions() {
+        List<SurveyQuestion> questions = surveyQuestionRepository.findAllByOrderByOrderNumberAsc();
+        return questions.stream().map(q -> SurveyQuestionWithOptionsResponseDto.builder()
+                .questionId(q.getId())
+                .questionContent(q.getContent())
+                .options(q.getOptions().stream().map(o -> SurveyOptionResponseDto.builder()
+                        .optionId(o.getId())
+                        .optionContent(o.getContent())
+                        .build())
+                        .collect(Collectors.toList()))
+                .build())
+            .collect(Collectors.toList());
     }
 
     @Override
-    public BaseResponse<List<SurveyHistoryWithAnswersResponseDto>> getSurveyHistoriesWithAnswers(Integer userId) {
+    public List<SurveyHistoryWithAnswersResponseDto> getSurveyHistoriesWithAnswers(Integer userId) {
         List<SurveyHistory> histories = surveyHistoryRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
-        List<SurveyHistoryWithAnswersResponseDto> result = histories.stream().<SurveyHistoryWithAnswersResponseDto>map(h ->
+        List<SurveyHistoryWithAnswersResponseDto> result = histories.stream().map(h ->
             SurveyHistoryWithAnswersResponseDto.builder()
                 .historyId(h.getId())
                 .createdAt(h.getCreatedAt())
@@ -58,43 +68,42 @@ public class SurveyServiceImpl implements SurveyService {
                         .questionContent(a.getSurveyQuestion().getContent())
                         .optionId(a.getSurveyOption().getId())
                         .optionContent(a.getSurveyOption().getContent())
-                        .bodyTypeId(a.getSurveyOption().getBodyType().getId())
                         .build()
                 ).collect(Collectors.toList()))
                 .build()
         ).collect(Collectors.toList());
-        if (result.isEmpty()) {
-            return new BaseResponse<>("COMMON200", "조회 결과가 없습니다.", result);
-        }
-        return BaseResponse.onSuccess(result);
+        return result;
     }
 
     @Override
-    public BaseResponse<String> saveSurveyAnswersBulk(SurveyAnswersSubmitRequestDto dto) {
-        SurveyHistory history;
-        if (dto.getHistoryId() != null) {
-            history = surveyHistoryRepository.findById(dto.getHistoryId())
-                .orElseThrow(() -> new IllegalArgumentException("설문 이력이 존재하지 않습니다."));
-        } else {
-            throw new IllegalArgumentException("historyId는 필수입니다.");
+    public String saveSurveyAnswersBulk(SurveyAnswersSubmitRequestDto dto, Integer userId) {
+        System.out.println("dto: " + dto);
+        if (dto.getAnswers() == null || dto.getAnswers().isEmpty()) {
+            throw new IllegalArgumentException("answers 리스트는 비어있을 수 없습니다.");
         }
-        for (SurveyAnswersSubmitRequestDto.Answer answerDto : dto.getAnswers()) {
-            SurveyQuestion question = surveyQuestionRepository.findById(answerDto.getQuestionId())
-                .orElseThrow(() -> new IllegalArgumentException("질문이 존재하지 않습니다."));
-            SurveyOption option = surveyOptionRepository.findById(answerDto.getOptionId())
-                .orElseThrow(() -> new IllegalArgumentException("옵션이 존재하지 않습니다."));
-            SurveyAnswer answer = SurveyAnswer.builder()
-                .surveyHistory(history)
-                .surveyQuestion(question)
-                .surveyOption(option)
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 userId: " + userId));
+        SurveyHistory history = SurveyHistory.builder()
+                .user(user)
                 .build();
-            surveyAnswerRepository.save(answer);
-        }
-        return BaseResponse.onSuccess("설문 답변이 저장되었습니다.");
+        SurveyHistory savedHistory = surveyHistoryRepository.save(history);
+        List<SurveyAnswer> answers = dto.getAnswers().stream().map(a -> {
+            SurveyQuestion question = surveyQuestionRepository.findById(a.getQuestionId())
+                    .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 questionId: " + a.getQuestionId()));
+            SurveyOption option = surveyOptionRepository.findById(a.getOptionId())
+                    .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 optionId: " + a.getOptionId()));
+            return SurveyAnswer.builder()
+                    .surveyHistory(savedHistory)
+                    .surveyQuestion(question)
+                    .surveyOption(option)
+                    .build();
+        }).collect(Collectors.toList());
+        surveyAnswerRepository.saveAll(answers);
+        return "설문 답변이 저장되었습니다.";
     }
 
     @Override
-    public BaseResponse<List<SurveyAnswerResponseDto>> getSurveyAnswersByHistory(Integer historyId) {
+    public List<SurveyAnswerResponseDto> getSurveyAnswersByHistory(Integer historyId) {
         List<SurveyAnswer> answers = surveyAnswerRepository.findAll().stream()
                 .filter(a -> a.getSurveyHistory().getId().equals(historyId))
                 .collect(Collectors.toList());
@@ -104,9 +113,8 @@ public class SurveyServiceImpl implements SurveyService {
                         .questionContent(a.getSurveyQuestion().getContent())
                         .optionId(a.getSurveyOption().getId())
                         .optionContent(a.getSurveyOption().getContent())
-                        .bodyTypeId(a.getSurveyOption().getBodyType().getId())
                         .build()
         ).collect(Collectors.toList());
-        return BaseResponse.onSuccess(result);
+        return result;
     }
 } 

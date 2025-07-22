@@ -1,4 +1,4 @@
-package com.yourmode.yourmodebackend.domain.survey.dto;
+package com.yourmode.yourmodebackend.domain.survey.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -12,12 +12,10 @@ import lombok.Data;
 public class SurveyAnswerResponseDto {
     @Schema(description = "질문 ID", example = "1")
     private Integer questionId;
-    @Schema(description = "질문 내용", example = "당신의 체형을 선택하세요.")
+    @Schema(description = "질문 내용", example = "피부는 어떤 느낌인가요?")
     private String questionContent;
     @Schema(description = "옵션 ID", example = "2")
     private Integer optionId;
-    @Schema(description = "옵션 내용", example = "스트레이트형")
+    @Schema(description = "옵션 내용", example = "피부가 탄탄하고 쫀쫀한 탄력감이 느껴진다.")
     private String optionContent;
-    @Schema(description = "체형 타입 ID", example = "1")
-    private Integer bodyTypeId;
 } 

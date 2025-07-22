@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_tokens")
+@Table(name = "user_tokens", uniqueConstraints = @UniqueConstraint(columnNames = "user_id"))
 @Getter
 @Setter
 @NoArgsConstructor
