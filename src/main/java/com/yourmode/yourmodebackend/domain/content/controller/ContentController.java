@@ -12,11 +12,19 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/contents")
+@RequestMapping("/api/content")
 @RequiredArgsConstructor
 public class ContentController {
     private final ContentService contentService;
 
+    /**
+     * [이미지 업로드 절차 안내]
+     * 1. /api/content/s3/presigned-url?fileName=contents/uuid.jpg 호출 → presigned URL 발급
+     * 2. 프론트엔드에서 해당 presigned URL로 PUT 요청하여 S3에 직접 이미지 업로드
+     * 3. 업로드된 S3 URL(ex: https://bucket.s3.amazonaws.com/contents/uuid.jpg)을 ContentCreateRequestDto.mainImgUrl, block imageUrl 등에 세팅하여 Content 생성 API 호출
+     */
+
+    // Content 생성 API는 mainImgUrl, block imageUrl에 S3 URL만 받음
     @PostMapping
     public ResponseEntity<ContentDetailResponseDto> createContent(
             @RequestBody ContentCreateRequestDto dto,

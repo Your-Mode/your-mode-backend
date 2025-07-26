@@ -7,6 +7,9 @@ import java.util.List;
 @Data
 public class ContentCreateRequestDto {
     private String title;
+    /**
+     * S3 presigned URL로 업로드된 이미지의 S3 URL을 넣어야 함
+     */
     private String mainImgUrl;
     private boolean isRecommended;
     private String publishType;
@@ -35,6 +38,9 @@ public class ContentCreateRequestDto {
 
     @Data
     public static class ContentBlockImageDto {
+        /**
+         * S3 presigned URL로 업로드된 이미지의 S3 URL을 넣어야 함
+         */
         private String imageUrl;
         private Integer imageOrder;
     }

@@ -2,9 +2,9 @@ package com.yourmode.yourmodebackend.domain.content.service;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,32 +26,43 @@ public class S3ServiceImpl implements S3Service {
     }
 
     @Override
-    public String uploadFile(MultipartFile file, String dirName) {
-        String fileName = dirName + "/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(file.getSize());
-        metadata.setContentType(file.getContentType());
-        try {
-            amazonS3.putObject(bucket, fileName, file.getInputStream(), metadata);
-        } catch (IOException e) {
-            throw new RuntimeException("S3 파일 업로드 실패", e);
-        }
-        return amazonS3.getUrl(bucket, fileName).toString();
-    }
-
-    @Override
-    public void deleteFile(String fileUrl) {
-        String fileName = fileUrl.substring(fileUrl.indexOf(bucket) + bucket.length() + 1);
-        amazonS3.deleteObject(new DeleteObjectRequest(bucket, fileName));
-    }
-
-    @Override
-    public URL generatePresignedUrl(String fileName, int expirationMinutes) {
+    public URL generatePresignedUrl(String fileName, Integer userId, int expirationMinutes, String httpMethod) {
+        // Create user-specific directory structure
+        String userDirectory = "contents/users/" + userId + "/";
+        String fullFileName = userDirectory + fileName;
+        
         Date expiration = new Date(System.currentTimeMillis() + expirationMinutes * 60 * 1000L);
         GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                new GeneratePresignedUrlRequest(bucket, fileName)
-                        .withMethod(com.amazonaws.HttpMethod.GET)
+                new GeneratePresignedUrlRequest(bucket, fullFileName)
+                        .withMethod(com.amazonaws.HttpMethod.valueOf(httpMethod))
                         .withExpiration(expiration);
         return amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
+    }
+
+
+    @Override
+    public String uploadFileWithPresignedUrl(String presignedUrl, MultipartFile file) {
+        try {
+            // HTTP 클라이언트를 사용하여 presigned URL로 PUT 요청
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(presignedUrl))
+                    .PUT(java.net.http.HttpRequest.BodyPublishers.ofByteArray(file.getBytes()))
+                    .header("Content-Type", file.getContentType())
+                    .build();
+            
+            java.net.http.HttpResponse<String> response = client.send(request, 
+                    java.net.http.HttpResponse.BodyHandlers.ofString());
+            
+            if (response.statusCode() == 200) {
+                // Presigned URL에서 실제 S3 URL 추출 (쿼리 파라미터 제거)
+                return presignedUrl.split("\\?")[0];
+            } else {
+                throw new RuntimeException("Failed to upload file using presigned URL. Status: " + response.statusCode());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to upload file using presigned URL", e);
+        }
     }
 } 
