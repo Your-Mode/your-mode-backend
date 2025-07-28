@@ -12,9 +12,10 @@ public class ContentCreateRequestDto {
      */
     private String mainImgUrl;
     private boolean isRecommended;
-    private String publishType;
     private LocalDateTime publishAt;
+    private Integer contentsRequestId;
     private List<Integer> categoryIds;
+    private List<Integer> bodyTypeIds;
     private List<ContentBlockDto> blocks;
 
     @Data

@@ -40,7 +40,7 @@ public class KakaoSignupRequestDto implements CommonSignupRequest{
     @DecimalMax(value = "300.0", message = "몸무게는 300kg 이하이어야 합니다.")
     private Float weight;
 
-    @Schema(description = "성별 (MALE 또는 FEMALE)", example = "MALE")
+    @Schema(description = "성별 (MALE: 남성, FEMALE: 여성, UNKNOWN: 선택안함)", example = "MALE")
     @NotNull(message = "성별을 선택해주세요.")
     private Gender gender;
 

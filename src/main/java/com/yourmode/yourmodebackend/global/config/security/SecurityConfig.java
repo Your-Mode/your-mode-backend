@@ -62,10 +62,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080", "https://your-frontend.com")); // 도메인 반영 필요
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080", "https://localhost:8080", "https://yourmode.co.kr")); 
+        config.setAllowedOriginPatterns(List.of("*")); // 모든 origin 허용 (개발 환경용)
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
         config.setAllowCredentials(true); // 쿠키 허용
+        config.setMaxAge(3600L); // preflight 요청 캐시 시간
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

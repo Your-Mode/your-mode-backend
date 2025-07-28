@@ -21,8 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-
 import jakarta.validation.Valid;
 
 @Slf4j
@@ -158,6 +156,25 @@ public class AuthController {
                     )
             ),
             @ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 데이터 (바디타입 등)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "존재하지 않는 바디타입",
+                                    summary = "존재하지 않는 바디타입 ID로 회원가입 시도",
+                                    value = """
+                {
+                    "timestamp": "2025-06-29T12:45:00.789",
+                    "code": "AUTH-400-003",
+                    "message": "존재하지 않는 체형입니다. 체형을 다시 선택해주세요."
+                }
+                """
+                            )
+                    )
+            ),
+            @ApiResponse(
                     responseCode = "401",
                     description = "회원가입 후 인증 실패",
                     content = @Content(
@@ -268,26 +285,26 @@ public class AuthController {
      * 카카오 로그인 인증 요청 엔드포인트
      * <p>
      * 1. 클라이언트가 GET /authorize 요청을 보냅니다.
-     * 2. 이 메서드는 카카오 인증 URL을 구성한 뒤, 클라이언트를 해당 URL로 리다이렉트합니다.
-     * 3. 사용자가 로그인 및 동의를 완료하면, Kakao가 Authorization Code를 포함해 리다이렉션합니다.
-     * 4. 서버는 code를 받아 access token을 요청하고 로그인 처리합니다.
+     * 2. 이 메서드는 카카오 인증 URL을 반환합니다.
+     * 3. 클라이언트는 이 URL로 리다이렉트하여 카카오 인증을 진행합니다.
+     * 4. 사용자가 로그인 및 동의를 완료하면, Kakao가 Authorization Code를 포함해 리다이렉션합니다.
+     * 5. 서버는 code를 받아 access token을 요청하고 로그인 처리합니다.
      *
-     * @param response HttpServletResponse 객체로 리다이렉션 수행
-     * @throws IOException 리다이렉션 중 예외 발생 시
+     * @return 카카오 인증 URL
      */
     @Operation(
             summary = "카카오 로그인 인증 요청",
-            description = "클라이언트를 카카오 인증 페이지로 리다이렉트합니다."
+            description = "카카오 인증 URL을 반환합니다."
     )
+    @CrossOrigin(origins = "*", allowedHeaders = "*")
     @GetMapping("/oauth2/kakao/authorize")
-    public void redirectToKakaoAuth(HttpServletResponse response) throws IOException {
-
+    public ResponseEntity<BaseResponse<String>> getKakaoAuthUrl() {
         String kakaoAuthUrl = "https://kauth.kakao.com/oauth/authorize"
                 + "?client_id=" + clientId
                 + "&redirect_uri=" + redirectUri
                 + "&response_type=code";
 
-        response.sendRedirect(kakaoAuthUrl);
+        return ResponseEntity.ok(BaseResponse.onSuccess(kakaoAuthUrl));
     }
 
     /**
@@ -421,6 +438,7 @@ public class AuthController {
                     )
             )
     })
+    @CrossOrigin(origins = "*", allowedHeaders = "*")
     @PostMapping("/oauth2/kakao/login")
     public ResponseEntity<BaseResponse<AuthResponseDto>> loginWithKakao(
             @Valid @RequestBody KakaoLoginRequestDto request,
@@ -466,6 +484,25 @@ public class AuthController {
                         },
                         "additionalInfoNeeded": null
                     }
+                }
+                """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 데이터 (바디타입 등)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "존재하지 않는 바디타입",
+                                    summary = "존재하지 않는 바디타입 ID로 회원가입 시도",
+                                    value = """
+                {
+                    "timestamp": "2025-06-29T12:45:00.789",
+                    "code": "AUTH-400-003",
+                    "message": "존재하지 않는 체형입니다. 체형을 다시 선택해주세요."
                 }
                 """
                             )
@@ -558,6 +595,7 @@ public class AuthController {
                     )
             )
     })
+    @CrossOrigin(origins = "*", allowedHeaders = "*")
     @PostMapping("/oauth2/kakao/signup/complete")
     public ResponseEntity<BaseResponse<AuthResponseDto>> completeSignupWithKakao(
             @Valid @RequestBody KakaoSignupRequestDto request
@@ -694,7 +732,7 @@ public class AuthController {
                 {
                   "timestamp": "2025-06-30T10:25:00.000",
                   "code": "AUTH-400-002",
-                  "message": "활성화된 세션이 존재하지 않습니다.",
+                  "message": "활성화된 세션이 존재하지 않습니다."
                 }
                 """
                             )
@@ -713,7 +751,7 @@ public class AuthController {
                 {
                   "timestamp": "2025-06-30T10:30:00.000",
                   "code": "AUTH-500-005",
-                  "message": "로그아웃 처리 중 오류가 발생했습니다.",
+                  "message": "로그아웃 처리 중 오류가 발생했습니다."
                 }
                 """
                             )

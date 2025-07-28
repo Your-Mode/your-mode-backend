@@ -10,11 +10,11 @@ public class ContentDetailResponseDto {
     private String title;
     private String mainImgUrl;
     private boolean isRecommended;
-    private String publishType;
     private LocalDateTime publishAt;
     private LocalDateTime createdAt;
     private LocalDateTime editedAt;
     private List<CategoryDto> categories;
+    private List<BodyTypeDto> bodyTypes;
     private List<ContentBlockDto> blocks;
 
     @Data
@@ -46,5 +46,11 @@ public class ContentDetailResponseDto {
     public static class ContentBlockImageDto {
         private String imageUrl;
         private Integer imageOrder;
+    }
+
+    @Data
+    public static class BodyTypeDto {
+        private Integer id;
+        private String name;
     }
 } 

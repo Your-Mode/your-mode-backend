@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum UserErrorStatus implements BaseCodeInterface {
 
-    INVALID_BODY_TYPE(HttpStatus.BAD_REQUEST, "AUTH-400-003", "유효하지 않은 체형 타입입니다."),
+    INVALID_BODY_TYPE(HttpStatus.BAD_REQUEST, "AUTH-400-003", "존재하지 않는 체형입니다. 체형을 다시 선택해주세요."),
     
     // 회원가입
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "AUTH-409-001", "이미 사용 중인 이메일입니다."),
@@ -29,6 +29,7 @@ public enum UserErrorStatus implements BaseCodeInterface {
     // 로그인
     AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "AUTH-401-001", "인증에 실패했습니다."), // 기타 인증 실패
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "AUTH-401-002", "이메일 또는 비밀번호가 올바르지 않습니다."), // 로그인 시도 실패
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH-403-001", "접근 권한이 없습니다. 인증 정보를 확인해주세요."), // 인증된 사용자 정보가 없는 경우
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH-404-001", "해당 이메일의 사용자를 찾을 수 없습니다."),
     PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH-404-004", "사용자 프로필을 찾을 수 없습니다."),
     BODY_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH-404-005", "해당 체형 정보를 찾을 수 없습니다."),

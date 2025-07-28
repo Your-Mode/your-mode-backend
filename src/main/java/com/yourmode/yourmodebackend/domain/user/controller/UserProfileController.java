@@ -63,6 +63,25 @@ public class UserProfileController {
             )
         ),
         @ApiResponse(
+            responseCode = "403",
+            description = "접근 권한 없음",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = @ExampleObject(
+                    name = "접근 권한 없음",
+                    summary = "인증 정보가 없거나 접근 권한이 없는 경우",
+                    value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:00.000",
+                        "code": "AUTH-403-001",
+                        "message": "접근 권한이 없습니다. 인증 정보를 확인해주세요."
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
             responseCode = "404",
             description = "프로필 또는 사용자 정보 없음",
             content = @Content(
@@ -119,8 +138,26 @@ public class UserProfileController {
                             "weight": 70.0,
                             "gender": "MALE",
                             "bodyTypeId": 2,
-                            "bodyTypeName": "웨이브"
                         }
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "접근 권한 없음",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = @ExampleObject(
+                    name = "접근 권한 없음",
+                    summary = "인증 정보가 없거나 접근 권한이 없는 경우",
+                    value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:00.000",
+                        "code": "AUTH-403-001",
+                        "message": "접근 권한이 없습니다. 인증 정보를 확인해주세요."
                     }
                     """
                 )
@@ -173,6 +210,25 @@ public class UserProfileController {
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
                         "result": "비밀번호가 성공적으로 변경되었습니다."
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "접근 권한 없음",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = @ExampleObject(
+                    name = "접근 권한 없음",
+                    summary = "인증 정보가 없거나 접근 권한이 없는 경우",
+                    value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:00.000",
+                        "code": "AUTH-403-001",
+                        "message": "접근 권한이 없습니다. 인증 정보를 확인해주세요."
                     }
                     """
                 )

@@ -31,10 +31,14 @@ public class UserProfileServiceImpl implements UserProfileService {
      * 현재 로그인한 사용자의 프로필 정보를 조회합니다.
      * @param userId 사용자 ID
      * @return UserProfileResponseDto
-     * @throws RestApiException USER_NOT_FOUND, PROFILE_NOT_FOUND 등
+     * @throws RestApiException ACCESS_DENIED, USER_NOT_FOUND, PROFILE_NOT_FOUND 등
      */
     @Transactional(readOnly = true)
     public UserProfileResponseDto getMyProfile(Integer userId) {
+        if (userId == null) {
+            throw new RestApiException(UserErrorStatus.ACCESS_DENIED);
+        }
+        
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
 
@@ -56,10 +60,14 @@ public class UserProfileServiceImpl implements UserProfileService {
      * @param userId 사용자 ID
      * @param dto 프로필 수정 요청 DTO
      * @return UserProfileResponseDto
-     * @throws RestApiException USER_NOT_FOUND, PROFILE_NOT_FOUND, BODY_TYPE_NOT_FOUND 등
+     * @throws RestApiException ACCESS_DENIED, USER_NOT_FOUND, PROFILE_NOT_FOUND, BODY_TYPE_NOT_FOUND 등
      */
     @Transactional
     public UserProfileResponseDto updateMyProfile(Integer userId, UserProfileUpdateRequestDto dto) {
+        if (userId == null) {
+            throw new RestApiException(UserErrorStatus.ACCESS_DENIED);
+        }
+        
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
 
@@ -91,10 +99,14 @@ public class UserProfileServiceImpl implements UserProfileService {
      * 사용자의 비밀번호를 변경합니다.
      * @param userId 사용자 ID
      * @param newPassword 새 비밀번호(암호화 전)
-     * @throws RestApiException USER_NOT_FOUND, CREDENTIAL_NOT_FOUND 등
+     * @throws RestApiException ACCESS_DENIED, USER_NOT_FOUND, CREDENTIAL_NOT_FOUND 등
      */
     @Transactional
     public void updatePassword(Integer userId, String newPassword) {
+        if (userId == null) {
+            throw new RestApiException(UserErrorStatus.ACCESS_DENIED);
+        }
+        
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
         UserCredential credential = userCredentialRepository.findByUser(user)
