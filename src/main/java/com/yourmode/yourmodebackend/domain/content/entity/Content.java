@@ -29,9 +29,6 @@ public class Content {
     @Column(name = "is_recommended", nullable = false)
     private boolean isRecommended = false;
 
-    @Column(name = "publish_type", length = 20, nullable = false)
-    private String publishType = "IMMEDIATE";
-
     @Column(name = "publish_at")
     private LocalDateTime publishAt;
 
