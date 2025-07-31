@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.apache.catalina.connector.ClientAbortException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,6 +24,15 @@ import java.util.Optional;
 @Slf4j
 @RestControllerAdvice
 public class ExceptionAdvice extends ResponseEntityExceptionHandler {
+
+    // ClientAbortException 처리 - 클라이언트가 연결을 끊은 경우
+    @ExceptionHandler(ClientAbortException.class)
+    public ResponseEntity<BaseResponse<String>> handleClientAbortException(ClientAbortException e) {
+        // 클라이언트가 연결을 끊은 것이므로 에러 로그 대신 디버그 로그로 처리
+        log.debug("Client aborted connection: {}", e.getMessage());
+        // 응답을 보낼 수 없으므로 null 반환
+        return null;
+    }
 
     // 커스텀 예외 처리
     @ExceptionHandler(RestApiException.class)

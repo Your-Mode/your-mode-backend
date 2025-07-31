@@ -40,6 +40,12 @@ public class AuthController {
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
 
+    @Value("${cookie.secure:false}")
+    private boolean cookieSecure;
+
+    @Value("${cookie.same-site:lax}")
+    private String cookieSameSite;
+
     /**
      * 토큰을 쿠키로 설정하는 헬퍼 메서드
      */
@@ -47,17 +53,29 @@ public class AuthController {
         // 액세스 토큰 쿠키 설정
         Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
         accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(false); // HTTPS에서만 전송
+        accessTokenCookie.setSecure(cookieSecure); // 환경에 따라 설정
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge((int) (accessTokenExpiration / 1000)); // 초 단위로 변환
+        
+        // SameSite 속성 설정 (Servlet 4.0+)
+        if (cookieSameSite != null && !cookieSameSite.isEmpty()) {
+            accessTokenCookie.setAttribute("SameSite", cookieSameSite);
+        }
+        
         response.addCookie(accessTokenCookie);
 
         // 리프레시 토큰 쿠키 설정
         Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
         refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(false); // HTTPS에서만 전송
+        refreshTokenCookie.setSecure(cookieSecure); // 환경에 따라 설정
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge((int) (refreshTokenExpiration / 1000)); // 초 단위로 변환
+        
+        // SameSite 속성 설정 (Servlet 4.0+)
+        if (cookieSameSite != null && !cookieSameSite.isEmpty()) {
+            refreshTokenCookie.setAttribute("SameSite", cookieSameSite);
+        }
+        
         response.addCookie(refreshTokenCookie);
     }
 
@@ -827,16 +845,28 @@ public class AuthController {
         // 쿠키에서 토큰 삭제
         Cookie accessTokenCookie = new Cookie("accessToken", null);
         accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(false);
+        accessTokenCookie.setSecure(cookieSecure);
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(0);
+        
+        // SameSite 속성 설정
+        if (cookieSameSite != null && !cookieSameSite.isEmpty()) {
+            accessTokenCookie.setAttribute("SameSite", cookieSameSite);
+        }
+        
         response.addCookie(accessTokenCookie);
 
         Cookie refreshTokenCookie = new Cookie("refreshToken", null);
         refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(false);
+        refreshTokenCookie.setSecure(cookieSecure);
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge(0);
+        
+        // SameSite 속성 설정
+        if (cookieSameSite != null && !cookieSameSite.isEmpty()) {
+            refreshTokenCookie.setAttribute("SameSite", cookieSameSite);
+        }
+        
         response.addCookie(refreshTokenCookie);
         
         return ResponseEntity.ok(BaseResponse.onSuccess(userIdResponseDto));
