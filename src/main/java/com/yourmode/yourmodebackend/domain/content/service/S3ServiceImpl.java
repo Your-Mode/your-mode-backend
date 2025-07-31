@@ -43,13 +43,16 @@ public class S3ServiceImpl implements S3Service {
     @Override
     public String uploadFileWithPresignedUrl(String presignedUrl, MultipartFile file) {
         try {
-            // HTTP 클라이언트를 사용하여 presigned URL로 PUT 요청
-            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            // HTTP 클라이언트를 사용하여 presigned URL로 PUT 요청 (타임아웃 설정 추가)
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(java.time.Duration.ofSeconds(30))
+                    .build();
             
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create(presignedUrl))
                     .PUT(java.net.http.HttpRequest.BodyPublishers.ofByteArray(file.getBytes()))
                     .header("Content-Type", file.getContentType())
+                    .timeout(java.time.Duration.ofSeconds(60)) // 요청 타임아웃 60초
                     .build();
             
             java.net.http.HttpResponse<String> response = client.send(request, 

@@ -47,7 +47,7 @@ public class AuthController {
         // 액세스 토큰 쿠키 설정
         Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
         accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(true); // HTTPS에서만 전송
+        accessTokenCookie.setSecure(false); // HTTPS에서만 전송
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge((int) (accessTokenExpiration / 1000)); // 초 단위로 변환
         response.addCookie(accessTokenCookie);
@@ -55,7 +55,7 @@ public class AuthController {
         // 리프레시 토큰 쿠키 설정
         Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
         refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(true); // HTTPS에서만 전송
+        refreshTokenCookie.setSecure(false); // HTTPS에서만 전송
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge((int) (refreshTokenExpiration / 1000)); // 초 단위로 변환
         response.addCookie(refreshTokenCookie);
@@ -827,14 +827,14 @@ public class AuthController {
         // 쿠키에서 토큰 삭제
         Cookie accessTokenCookie = new Cookie("accessToken", null);
         accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(true);
+        accessTokenCookie.setSecure(false);
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(0);
         response.addCookie(accessTokenCookie);
 
         Cookie refreshTokenCookie = new Cookie("refreshToken", null);
         refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setSecure(false);
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge(0);
         response.addCookie(refreshTokenCookie);
