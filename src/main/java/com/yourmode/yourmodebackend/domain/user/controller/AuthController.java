@@ -14,6 +14,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,13 +34,41 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @Value("${jwt.access-token-expiration}")
+    private long accessTokenExpiration;
+
+    @Value("${jwt.refresh-token-expiration}")
+    private long refreshTokenExpiration;
+
+    /**
+     * 토큰을 쿠키로 설정하는 헬퍼 메서드
+     */
+    private void setTokenCookies(HttpServletResponse response, String accessToken, String refreshToken) {
+        // 액세스 토큰 쿠키 설정
+        Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(true); // HTTPS에서만 전송
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge((int) (accessTokenExpiration / 1000)); // 초 단위로 변환
+        response.addCookie(accessTokenCookie);
+
+        // 리프레시 토큰 쿠키 설정
+        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true); // HTTPS에서만 전송
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge((int) (refreshTokenExpiration / 1000)); // 초 단위로 변환
+        response.addCookie(refreshTokenCookie);
+    }
+
     /**
      * 로컬 회원가입
      *
      * @param request LocalSignupRequestDto - 회원가입 요청 데이터 (이메일, 비밀번호 등)
-     * @return 액세스 토큰과 유저 정보를 포함한 응답 DTO
+     * @param response 쿠키 설정을 위한 HttpServletResponse
+     * @return 유저 정보를 포함한 응답 DTO
      */
-    @Operation(summary = "로컬 회원가입", description = "이메일과 비밀번호를 통해 회원가입을 수행하고, JWT 토큰을 반환합니다.")
+    @Operation(summary = "로컬 회원가입", description = "이메일과 비밀번호를 통해 회원가입을 수행하고, JWT 토큰을 쿠키로 설정합니다.")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
@@ -48,19 +78,16 @@ public class AuthController {
                             schema = @Schema(implementation = BaseResponse.class),
                             examples = @ExampleObject(
                                     name = "회원가입 성공 예시",
-                                    summary = "회원가입 후 발급된 토큰과 유저 정보 반환",
+                                    summary = "회원가입 후 유저 정보 반환 (토큰은 쿠키로 설정됨)",
                                     value = """
                 {
                     "timestamp": "2025-06-29T12:34:56.789",
                     "code": "COMMON200",
                     "message": "요청에 성공하였습니다.",
                     "result": {
-                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                        "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
                         "user": {
                             "name": "홍길동",
-                            "role": "USER",
-                            "bodyTypeId": 2
+                            "role": "USER"
                         },
                         "additionalInfoNeeded": null
                     }
@@ -194,21 +221,30 @@ public class AuthController {
                     )
             )
     })
-    @PostMapping("/signup")
-    public ResponseEntity<BaseResponse<AuthResponseDto>> signUp(@Valid @RequestBody LocalSignupRequestDto request) {
-        AuthResponseDto authResponseDto = authService.signUp(request);
-        return ResponseEntity.ok(
-                BaseResponse.onSuccess(authResponseDto)
-        );
+        @PostMapping("/signup")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> signUp(
+            @Valid @RequestBody LocalSignupRequestDto request,
+            HttpServletResponse response
+    ) {
+        AuthService.AuthResult authResult = authService.signUp(request);
+
+        // 토큰을 쿠키로 설정
+        setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
+
+        // 사용자 정보를 AuthResult에서 가져와서 응답 구성
+        AuthResponseDto authResponseDto = new AuthResponseDto(authResult.userInfo());
+
+        return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
     /**
      * 로컬 로그인
      *
      * @param request LocalLoginRequestDto - 로그인 요청 데이터 (이메일, 비밀번호)
-     * @return 액세스 토큰과 유저 정보를 포함한 응답 DTO
+     * @param response 쿠키 설정을 위한 HttpServletResponse
+     * @return 유저 정보를 포함한 응답 DTO
      */
-    @Operation(summary = "로컬 로그인", description = "이메일과 비밀번호를 통해 로그인하고 JWT 토큰과 사용자 정보를 반환합니다.")
+    @Operation(summary = "로컬 로그인", description = "이메일과 비밀번호를 통해 로그인하고 JWT 토큰을 쿠키로 설정합니다.")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
@@ -217,19 +253,16 @@ public class AuthController {
                             mediaType = "application/json",
                             schema = @Schema(implementation = BaseResponse.class),
                             examples = @ExampleObject(name = "로그인 성공 예시",
-                                    summary = "로그인 후 발급된 토큰과 유저 정보 반환",
+                                    summary = "로그인 후 유저 정보 반환 (토큰은 쿠키로 설정됨)",
                                     value = """
                 {
                     "timestamp": "2025-06-29T12:34:56.789",
                     "code": "COMMON200",
                     "message": "요청에 성공하였습니다.",
                     "result": {
-                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                        "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
                         "user": {
                             "name": "홍길동",
-                            "role": "USER",
-                            "bodyTypeId": 2
+                            "role": "USER"
                         },
                         "additionalInfoNeeded": null
                     }
@@ -271,8 +304,18 @@ public class AuthController {
             )
     })
     @PostMapping("/login")
-    public ResponseEntity<BaseResponse<AuthResponseDto>> login(@Valid @RequestBody LocalLoginRequestDto request) {
-        AuthResponseDto authResponseDto = authService.login(request);
+    public ResponseEntity<BaseResponse<AuthResponseDto>> login(
+            @Valid @RequestBody LocalLoginRequestDto request,
+            HttpServletResponse response
+    ) {
+        AuthService.AuthResult authResult = authService.login(request);
+
+        // 토큰을 쿠키로 설정
+        setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
+
+        // 사용자 정보를 AuthResult에서 가져와서 응답 구성
+        AuthResponseDto authResponseDto = new AuthResponseDto(authResult.userInfo());
+
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
@@ -293,7 +336,7 @@ public class AuthController {
      * @return 카카오 인증 URL
      */
     @Operation(
-            summary = "카카오 로그인 인증 요청",
+            summary = "카카오 로그인 인증 요청(임시)",
             description = "카카오 인증 URL을 반환합니다."
     )
     @CrossOrigin(origins = "*", allowedHeaders = "*")
@@ -311,8 +354,8 @@ public class AuthController {
      * 카카오 로그인 요청 처리.
      *
      * @param request KakaoLoginRequestDto - 카카오 인가 코드를 담은 데이터
-     * @param servletResponse 리프레시 토큰을 쿠키 등에 설정하기 위한 HttpServletResponse
-     * @return 로그인 성공 시 액세스 토큰과 사용자 정보가 포함된 응답을 반환
+     * @param response 쿠키 설정을 위한 HttpServletResponse
+     * @return 로그인 성공 시 유저 정보가 포함된 응답을 반환
      */
     @Operation(
             summary = "카카오 로그인 요청 처리",
@@ -335,12 +378,9 @@ public class AuthController {
                     "code": "COMMON200",
                     "message": "요청에 성공하였습니다.",
                     "result": {
-                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                        "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
                         "user": {
                             "name": "홍길동",
                             "role": "USER",
-                            "bodyTypeId": 2
                         },
                         "additionalInfoNeeded": null
                     }
@@ -356,8 +396,6 @@ public class AuthController {
                     "code": "COMMON200",
                     "message": "요청에 성공하였습니다.",
                     "result": {
-                        "accessToken": null,
-                        "refreshToken": null,
                         "user": null,
                         "additionalInfoNeeded": {
                             "email": "newuser@example.com",
@@ -442,9 +480,18 @@ public class AuthController {
     @PostMapping("/oauth2/kakao/login")
     public ResponseEntity<BaseResponse<AuthResponseDto>> loginWithKakao(
             @Valid @RequestBody KakaoLoginRequestDto request,
-            HttpServletResponse servletResponse
+            HttpServletResponse response
     ) {
-        AuthResponseDto authResponseDto = authService.processKakaoLogin(request);
+        AuthService.AuthResult authResult = authService.processKakaoLogin(request);
+        
+        // 토큰이 있으면 쿠키로 설정 (기존 회원)
+        if (authResult.tokenPair().accessToken() != null && authResult.tokenPair().refreshToken() != null) {
+            setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
+        }
+        
+        // AuthResponseDto로 변환하여 응답
+        AuthResponseDto authResponseDto = new AuthResponseDto(authResult.userInfo());
+        
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
@@ -455,10 +502,11 @@ public class AuthController {
      * 신규 회원으로 사용자 등록 및 인증 토큰을 발급.
      *
      * @param request KakaoSignupRequestDto - 카카오 회원가입 요청 DTO (추가 프로필 정보 포함)
-     * @return 회원가입 완료 후 발급된 인증 토큰과 사용자 정보가 포함된 응답 반환
+     * @param response 쿠키 설정을 위한 HttpServletResponse
+     * @return 회원가입 완료 후 유저 정보가 포함된 응답 반환
      *
      */
-    @Operation(summary = "카카오 회원가입 완료 처리", description = "추가 프로필 정보가 포함된 가입 요청을 받아 신규 회원으로 사용자 등록 및 인증 토큰을 발급합니다.")
+    @Operation(summary = "카카오 회원가입 완료 처리", description = "추가 프로필 정보가 포함된 가입 요청을 받아 신규 회원으로 사용자 등록 및 인증 토큰을 쿠키로 설정합니다.")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
@@ -468,19 +516,16 @@ public class AuthController {
                             schema = @Schema(implementation = BaseResponse.class),
                             examples = @ExampleObject(
                                     name = "회원가입 성공 예시",
-                                    summary = "회원가입 후 발급된 토큰과 유저 정보 반환",
+                                    summary = "회원가입 후 유저 정보 반환 (토큰은 쿠키로 설정됨)",
                                     value = """
                 {
                     "timestamp": "2025-06-29T12:34:56.789",
                     "code": "COMMON200",
                     "message": "요청에 성공하였습니다.",
                     "result": {
-                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                        "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
                         "user": {
                             "name": "홍길동",
-                            "role": "USER",
-                            "bodyTypeId": 2
+                            "role": "USER"
                         },
                         "additionalInfoNeeded": null
                     }
@@ -598,42 +643,48 @@ public class AuthController {
     @CrossOrigin(origins = "*", allowedHeaders = "*")
     @PostMapping("/oauth2/kakao/signup/complete")
     public ResponseEntity<BaseResponse<AuthResponseDto>> completeSignupWithKakao(
-            @Valid @RequestBody KakaoSignupRequestDto request
+            @Valid @RequestBody KakaoSignupRequestDto request,
+            HttpServletResponse response
     ) {
-        AuthResponseDto responseDto = authService.completeSignupWithKakao(request);
-        return ResponseEntity.ok(BaseResponse.onSuccess(responseDto));
+                        AuthService.AuthResult authResult = authService.completeSignupWithKakao(request);
+
+        // 토큰을 쿠키로 설정
+        setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
+
+        // 사용자 정보를 AuthResult에서 가져와서 응답 구성
+        AuthResponseDto authResponseDto = new AuthResponseDto(authResult.userInfo());
+
+        return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
     /**
      * 리프레시 토큰으로 액세스 토큰 재발급 처리
      *
-     * @param request RefreshTokenRequestDto - 리프레시 토큰 재발급 요청 DTO (리프레시 토큰 포함)
-     * @return 새로 발급된 액세스 토큰 및 리프레시 토큰이 포함된 응답
+     * @param request HttpServletRequest - 쿠키에서 리프레시 토큰을 추출
+     * @param response 쿠키 설정을 위한 HttpServletResponse
+     * @return 새로 발급된 유저 정보가 포함된 응답
      *
      */
-    @Operation(summary = "액세스 토큰 재발급", description = "리프레시 토큰으로 액세스 토큰 재발급 처리합니다.")
+    @Operation(summary = "액세스 토큰 재발급", description = "쿠키의 리프레시 토큰으로 액세스 토큰 재발급 처리합니다.")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "회원가입 성공",
+                    description = "토큰 재발급 성공",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = BaseResponse.class),
                             examples = @ExampleObject(
-                                    name = "회원가입 성공 예시",
-                                    summary = "회원가입 후 발급된 토큰과 유저 정보 반환",
+                                    name = "토큰 재발급 성공 예시",
+                                    summary = "새로운 토큰이 쿠키로 설정되고 유저 정보 반환",
                                     value = """
                 {
                     "timestamp": "2025-06-29T12:34:56.789",
                     "code": "COMMON200",
                     "message": "요청에 성공하였습니다.",
                     "result": {
-                        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                        "refreshToken": "dGhpc0lzUmVmcmVzaFRva2Vu...",
                         "user": {
                             "name": "홍길동",
-                            "role": "USER",
-                            "bodyTypeId": 2
+                            "role": "USER"
                         },
                         "additionalInfoNeeded": null
                     }
@@ -683,17 +734,25 @@ public class AuthController {
     })
     @PostMapping("/refresh-token")
     public ResponseEntity<BaseResponse<AuthResponseDto>> refreshAccessToken(
-            @Valid @RequestBody RefreshTokenRequestDto request
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
-        AuthResponseDto authResponseDto = authService.refreshAccessToken(request);
+        AuthService.AuthResult authResult = authService.refreshAccessToken(request);
+
+        // 토큰을 쿠키로 설정
+        setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
+        
+        // 사용자 정보를 AuthResult에서 가져와서 응답 구성
+        AuthResponseDto authResponseDto = new AuthResponseDto(authResult.userInfo());
+        
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
     /**
-     * 액세스 토큰 재발급 API
+     * 로그아웃 API
      * <p>
-     * - 리프레시 토큰을 이용하여 새로운 액세스 토큰을 발급합니다.
-     * - 유효한 리프레시 토큰이 필요하며, 유저 정보도 함께 반환됩니다.
+     * - 현재 로그인된 사용자의 리프레시 토큰을 삭제하여 로그아웃을 수행합니다.
+     * - 쿠키에서 토큰을 삭제합니다.
      **/
     @Operation(summary = "로그아웃", description = "현재 로그인된 사용자의 리프레시 토큰을 삭제하여 로그아웃 처리합니다.")
     @ApiResponses({
@@ -759,8 +818,27 @@ public class AuthController {
             )
     })
     @PostMapping("/logout")
-    public ResponseEntity<BaseResponse<UserIdResponseDto>> logout(@CurrentUser PrincipalDetails principal) {
+    public ResponseEntity<BaseResponse<UserIdResponseDto>> logout(
+            @CurrentUser PrincipalDetails principal,
+            HttpServletResponse response
+    ) {
         UserIdResponseDto userIdResponseDto = authService.logout(principal);
+        
+        // 쿠키에서 토큰 삭제
+        Cookie accessTokenCookie = new Cookie("accessToken", null);
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(true);
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(0);
+        response.addCookie(accessTokenCookie);
+
+        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(0);
+        response.addCookie(refreshTokenCookie);
+        
         return ResponseEntity.ok(BaseResponse.onSuccess(userIdResponseDto));
     }
 
