@@ -12,5 +12,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class UserInfoDto {
     private String name;
+    private String email;
     private UserRole role;
+    private Boolean isNewUser;
 }

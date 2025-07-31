@@ -35,6 +35,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -78,7 +80,7 @@ public class AuthServiceImpl implements AuthService{
      *         - 인증 실패 시 AUTHENTICATION_FAILED 상태로 예외 발생
      */
     @Transactional
-    public AuthResponseDto signUp(LocalSignupRequestDto request) {
+    public AuthResult signUp(LocalSignupRequestDto request) {
         // 이메일 중복 체크 후 중복되면 예외 발생
         validateDuplicateEmail(request.getEmail());
 
@@ -107,18 +109,11 @@ public class AuthServiceImpl implements AuthService{
 
             saveUserToken(user, refresh.token(), refresh.expiry());
 
-            // 응답용 유저 정보 DTO 생성 (이름, 역할 포함)
-            UserInfoDto userInfo = UserInfoDto.builder()
-                    .name(principalDetails.getName())
-                    .role(principalDetails.getRole())
-                    .build();
+            // 사용자 정보 생성
+            UserInfoDto userInfo = buildUserInfoDto(user);
 
-            // 액세스 토큰, 리프레시 토큰, 유저 정보 포함한 응답 DTO 반환
-            return AuthResponseDto.builder()
-                    .accessToken(access.token())
-                    .refreshToken(refresh.token())
-                    .user(userInfo)
-                    .build();
+            // 토큰 쌍과 사용자 정보 반환
+            return new AuthResult(new TokenPair(access.token(), refresh.token()), userInfo);
 
         } catch (AuthenticationException ex) {
             throw new RestApiException(UserErrorStatus.AUTHENTICATION_FAILED);
@@ -135,6 +130,21 @@ public class AuthServiceImpl implements AuthService{
         if (userRepository.existsByEmail(email)) {
             throw new RestApiException(UserErrorStatus.DUPLICATE_EMAIL);
         }
+    }
+
+    /**
+     * User 엔티티로부터 UserInfoDto 생성
+     *
+     * @param user User 엔티티
+     * @return UserInfoDto
+     */
+    private UserInfoDto buildUserInfoDto(User user) {
+        return UserInfoDto.builder()
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .isNewUser(false)  // 기존 회원으로 간주
+                .build();
     }
 
     /**
@@ -273,7 +283,7 @@ public class AuthServiceImpl implements AuthService{
      * @throws RestApiException 인증 실패 시 AUTHENTICATION_FAILED 상태로 예외 발생
      */
     @Transactional
-    public AuthResponseDto login(LocalLoginRequestDto request) {
+    public AuthResult login(LocalLoginRequestDto request) {
         try {
             // 인증 토큰 생성: 이메일, 비밀번호 정보 포함
             UsernamePasswordAuthenticationToken authenticationToken =
@@ -297,18 +307,11 @@ public class AuthServiceImpl implements AuthService{
                     .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
             saveUserToken(user, refresh.token(), refresh.expiry());
 
-            // 응답용 유저 정보 DTO 생성 (이름 포함)
-            UserInfoDto userInfo = UserInfoDto.builder()
-                    .name(principalDetails.getName())
-                    .role(principalDetails.getRole())
-                    .build();
+            // 사용자 정보 생성
+            UserInfoDto userInfo = buildUserInfoDto(user);
 
-            // 액세스 토큰, 리프레시 토큰, 유저 정보 포함 응답 DTO 반환
-            return AuthResponseDto.builder()
-                    .accessToken(access.token())
-                    .refreshToken(refresh.token())
-                    .user(userInfo)
-                    .build();
+            // 토큰 쌍과 사용자 정보 반환
+            return new AuthResult(new TokenPair(access.token(), refresh.token()), userInfo);
 
         } catch (BadCredentialsException e) {
             throw new RestApiException(UserErrorStatus.INVALID_CREDENTIALS);
@@ -385,14 +388,14 @@ public class AuthServiceImpl implements AuthService{
      * 1) 인가 코드로 토큰 발급
      * 2) 토큰으로 사용자 정보 조회
      * 3) 이메일로 회원가입 여부 확인
-     * 4) 신규회원이면 사용자 정보를 반환 -> 추가 정보 입력, 기존 회원이면 JWT 발급하여 로그인 처리
+     * 4) 신규회원이면 null 토큰과 사용자 정보를 반환, 기존 회원이면 JWT 발급하여 로그인 처리
      *
      * @param request authorizationCode 카카오 인가 코드
-     * @return 로그인 응답 DTO (JWT 토큰 등)
+     * @return 인증 결과 (토큰 쌍과 사용자 정보)
      * @throws RestApiException 토큰 발급 실패, 이메일 누락, 회원 미존재 등 예외 상황
      */
     @Transactional
-    public AuthResponseDto processKakaoLogin(KakaoLoginRequestDto request) {
+    public AuthResult processKakaoLogin(KakaoLoginRequestDto request) {
         // 카카오 토큰 발급
         Map<String, Object> tokenInfo = requestTokenWithKakao(request.getAuthorizationCode());
         String accessToken = (String) tokenInfo.get("access_token");
@@ -416,13 +419,15 @@ public class AuthServiceImpl implements AuthService{
 
         // 회원 존재 여부 확인
         if (!userRepository.existsByEmail(email)) {
-            // 신규 회원: 추가 정보 입력이 필요함을 응답
-            KakaoSignupRequestDto kakaoSignupRequest = KakaoSignupRequestDto.builder()
-                    .email(email)
+            // 신규 회원: null 토큰과 기본 사용자 정보 반환 (추가 정보 입력 필요)
+            UserInfoDto userInfo = UserInfoDto.builder()
                     .name(nickname)
+                    .email(email)
+                    .role(UserRole.USER)
+                    .isNewUser(true)
                     .build();
 
-            return AuthResponseDto.ofNeedAdditionalInfo(kakaoSignupRequest);
+            return new AuthResult(new TokenPair(null, null), userInfo);
         }
 
         User user = userRepository.findByEmailWithProfile(email)
@@ -444,14 +449,12 @@ public class AuthServiceImpl implements AuthService{
 
         UserInfoDto userInfo = UserInfoDto.builder()
                 .name(user.getName())
+                .email(email)  // 카카오에서 받은 이메일 사용
                 .role(user.getRole())
+                .isNewUser(false)
                 .build();
 
-        return AuthResponseDto.builder()
-                .accessToken(access.token())
-                .refreshToken(refresh.token())
-                .user(userInfo)
-                .build();
+        return new AuthResult(new TokenPair(access.token(), refresh.token()), userInfo);
     }
 
     /**
@@ -467,7 +470,7 @@ public class AuthServiceImpl implements AuthService{
      * @return 로그인 응답 DTO (JWT 토큰, 사용자 정보 등)
      */
     @Transactional
-    public AuthResponseDto completeSignupWithKakao(KakaoSignupRequestDto request) {
+    public AuthResult completeSignupWithKakao(KakaoSignupRequestDto request) {
         // 이메일 중복 체크 및 회원 생성, 저장
         validateDuplicateEmail(request.getEmail());
         User user = createAndSaveUser(request);
@@ -490,28 +493,36 @@ public class AuthServiceImpl implements AuthService{
         JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, user.getEmail());
         saveUserToken(user, refresh.token(), refresh.expiry());
 
-        UserInfoDto userInfo = UserInfoDto.builder()
-                .name(user.getName())
-                .role(user.getRole())
-                .build();
+        // 사용자 정보 생성
+        UserInfoDto userInfo = buildUserInfoDto(user);
 
-        return AuthResponseDto.builder()
-                .accessToken(access.token())
-                .refreshToken(refresh.token())
-                .user(userInfo)
-                .build();
+        // 토큰 쌍과 사용자 정보 반환
+        return new AuthResult(new TokenPair(access.token(), refresh.token()), userInfo);
     }
 
     /**
      * 리프레시 토큰을 사용하여 액세스 토큰을 재발급하는 메서드
      *
-     * @param request RefreshTokenRequestDto - 클라이언트로부터 전달받은 리프레시 토큰
-     * @return AuthResponseDto 새로 발급된 토큰과 사용자 정보가 포함된 응답 DTO
+     * @param request HttpServletRequest - 쿠키에서 리프레시 토큰을 추출
+     * @return AuthResponseDto 사용자 정보가 포함된 응답 DTO (토큰은 쿠키로 설정됨)
      * @throws RestApiException 토큰 유효성 실패 혹은 사용자 정보 미발견 시 예외 발생
      */
     @Transactional
-    public AuthResponseDto refreshAccessToken(RefreshTokenRequestDto request) {
-        String refreshToken = request.getRefreshToken();
+    public AuthResult refreshAccessToken(HttpServletRequest request) {
+        // 쿠키에서 리프레시 토큰 추출
+        String refreshToken = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("refreshToken".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        if (refreshToken == null) {
+            throw new RestApiException(UserErrorStatus.INVALID_TOKEN);
+        }
 
         // 리프레시 토큰 유효성 검사
         if (!jwtProvider.validateToken(refreshToken)) {
@@ -538,19 +549,12 @@ public class AuthServiceImpl implements AuthService{
         userTokenRepository.save(savedToken);
 
         // 사용자 정보 조회
-        User user = userRepository.findByEmailWithProfile(email)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
+        UserInfoDto userInfo = buildUserInfoDto(user);
 
-        UserInfoDto userInfo = UserInfoDto.builder()
-                .name(user.getName())
-                .role(user.getRole())
-                .build();
-
-        return AuthResponseDto.builder()
-                .accessToken(newAccess.token())
-                .refreshToken(newRefresh.token())
-                .user(userInfo)
-                .build();
+        // 토큰 쌍과 사용자 정보 반환
+        return new AuthResult(new TokenPair(newAccess.token(), newRefresh.token()), userInfo);
     }
 
 
