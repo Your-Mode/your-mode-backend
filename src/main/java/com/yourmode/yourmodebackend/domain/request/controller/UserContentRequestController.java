@@ -312,7 +312,7 @@ public class UserContentRequestController {
             )
         )
     })
-    @GetMapping("/my-requests")
+    @GetMapping("/me")
     public ResponseEntity<BaseResponse<List<UserContentRequestSummaryDto>>> getMyRequests(
             @CurrentUser PrincipalDetails userDetails
     ) {
@@ -382,7 +382,7 @@ public class UserContentRequestController {
             )
         )
     })
-    @GetMapping("/my-requests/{id}")
+    @GetMapping("/me/{id}")
     public ResponseEntity<BaseResponse<UserContentRequestDetailDto>> getContentRequestById(
             @PathVariable Integer id,
             @CurrentUser PrincipalDetails userDetails

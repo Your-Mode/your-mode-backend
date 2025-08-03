@@ -349,7 +349,7 @@ public class UserProfileController {
             )
         )
     })
-    @PutMapping("/me/password")
+    @PostMapping("/me/password")
     public ResponseEntity<BaseResponse<String>> updatePassword(
             @CurrentUser PrincipalDetails principal,
             @RequestBody @Valid PasswordUpdateRequestDto request

@@ -88,7 +88,7 @@ public class EditorContentRequestController {
             )
         )
     })
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<BaseResponse<List<EditorContentRequestSummaryDto>>> getAllRequestsForEditor(
             @CurrentUser PrincipalDetails userDetails
     ) {
@@ -177,7 +177,7 @@ public class EditorContentRequestController {
             )
         )
     })
-    @GetMapping("/all/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<BaseResponse<EditorContentRequestDetailDto>> getRequestDetailForEditor(
             @PathVariable Integer id,
             @CurrentUser PrincipalDetails userDetails
@@ -305,7 +305,7 @@ public class EditorContentRequestController {
             )
         )
     })
-    @PostMapping("/all/{id}/status")
+    @PutMapping("/{id}/status")
     public ResponseEntity<BaseResponse<Void>> updateRequestStatus(
             @PathVariable Integer id,
             @RequestParam String statusCode,
