@@ -3,7 +3,6 @@ package com.yourmode.yourmodebackend.domain.user.service;
 import com.yourmode.yourmodebackend.domain.user.entity.*;
 import com.yourmode.yourmodebackend.domain.user.dto.request.*;
 import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResultDto;
-import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResponseDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.TokenPairDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.UserIdResponseDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.UserInfoDto;

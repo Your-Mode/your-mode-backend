@@ -9,6 +9,7 @@ public interface SurveyService {
     List<SurveyQuestionWithOptionsResponseDto> getAllQuestionsWithOptions();
     List<SurveyHistoryWithAnswersResponseDto> getSurveyHistoriesWithAnswers(Integer userId);
     List<SurveyAnswerResponseDto> getSurveyAnswersByHistory(Integer historyId);
-    SurveyResultFasiApiResponseDto analyzeSurveyAnswersWithFasi(SurveyTextAnswersRequestDto dto);
-    String saveSurveyAnswersBulk(SurveyAnswersSubmitRequestDto dto, Integer userId);
+    SurveyResultFastApiResponseDto analyzeSurveyAnswersWithFast(SurveyTextAnswersRequestDto dto);
+    SurveyResultFastApiResponseDto analyzeSurveyHistoryWithFast(Integer historyId, Integer userId);
+    SurveySaveResponseDto saveSurveyAnswersBulk(SurveyAnswersSubmitRequestDto dto, Integer userId);
 } 

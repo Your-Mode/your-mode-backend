@@ -9,7 +9,6 @@ import com.yourmode.yourmodebackend.global.config.security.auth.CurrentUser;
 import com.yourmode.yourmodebackend.global.config.security.auth.PrincipalDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,7 +24,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/surveys")
 @RequiredArgsConstructor
-@Tag(name = "Survey: 설문 API", description = "설문 질문/답변/이력 관련 API")
+@Tag(name = "Survey: 골격 진단 설문 API", description = "질문/답변/이력 관련 API")
 public class SurveyController {
     private final SurveyService surveyService;
 
@@ -45,7 +44,22 @@ public class SurveyController {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
-                        "result": [ /* ... */ ]
+                        "result": [
+                            {
+                                "questionId": 1,
+                                "questionContent": "...",
+                                "options": [
+                                    {
+                                        "optionId": 1,
+                                        "optionContent": "..."
+                                    },
+                                    {
+                                        "optionId": 2,
+                                        "optionContent": "..."
+                                    }
+                                ]
+                            }
+                        ]
                     }
                     """
                 )
@@ -83,7 +97,7 @@ public class SurveyController {
                     {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "SURVEY-500-001",
-                        "message": "설문 정보를 DB에 저장하는 중 오류가 발생했습니다."
+                        "message": "설문 질문 조회 중 오류가 발생했습니다."
                     }
                     """
                 )
@@ -95,12 +109,12 @@ public class SurveyController {
         return ResponseEntity.ok(BaseResponse.onSuccess(surveyService.getAllQuestionsWithOptions()));
     }
 
-    @Operation(summary = "설문 답변 일괄 저장", description = "로그인 유저가 모든 설문에 대해 선택한 답변을 한 번에 저장합니다.",
+    @Operation(summary = "설문 답변 일괄 저장", description = "유저가 선택한 모든 답변에 대해 한 번에 저장합니다",
         requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "설문 답변 일괄 저장 요청 DTO",
             required = true,
             content = @Content(
-                schema = @Schema(implementation = SurveyAnswersSubmitRequestDto.class),
+                schema = @Schema(implementation = BaseResponse.class),
                 examples = @ExampleObject(
                     name = "설문 답변 15개 예시",
                     value = """
@@ -143,7 +157,10 @@ public class SurveyController {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
-                        "result": "설문 답변이 저장되었습니다."
+                        "result": {
+                            "historyId": 1,
+                            "answerCount": 15
+                        }
                     }
                     """
                 )
@@ -155,17 +172,52 @@ public class SurveyController {
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = BaseResponse.class),
-                examples = @ExampleObject(
-                    name = "유효하지 않은 답변",
-                    summary = "필수 값 누락 등",
-                    value = """
-                    {
-                        "timestamp": "2025-07-17T12:00:00.000",
-                        "code": "SURVEY-400-001",
-                        "message": "유효하지 않은 설문 답변입니다."
-                    }
-                    """
-                )
+                examples = {
+                    @ExampleObject(
+                        name = "답변 목록 누락",
+                        summary = "answers 필드가 null인 경우",
+                        value = """
+                        {
+                            "timestamp": "2025-07-17T12:00:00.000",
+                            "code": "VALIDATION_ERROR",
+                            "message": "답변 목록이 비어있습니다."
+                        }
+                        """
+                    ),
+                    @ExampleObject(
+                        name = "유효하지 않은 사용자 ID",
+                        summary = "userId가 null이거나 유효하지 않은 경우",
+                        value = """
+                        {
+                            "timestamp": "2025-07-17T12:00:00.000",
+                            "code": "SURVEY-400-001",
+                            "message": "유효하지 않은 사용자 ID입니다."
+                        }
+                        """
+                    ),
+                    @ExampleObject(
+                        name = "유효하지 않은 질문 ID",
+                        summary = "questionId가 유효하지 않은 경우",
+                        value = """
+                        {
+                            "timestamp": "2025-07-17T12:00:00.000",
+                            "code": "SURVEY-400-002",
+                            "message": "유효하지 않은 질문 ID입니다."
+                        }
+                        """
+                    ),
+                    @ExampleObject(
+                        name = "유효하지 않은 옵션 ID",
+                        summary = "optionId가 유효하지 않은 경우",
+                        value = """
+                        {
+                            "timestamp": "2025-07-17T12:00:00.000",
+                            "code": "SURVEY-400-003",
+                            "message": "유효하지 않은 옵션 ID입니다."
+                        }
+                        """
+                    )
+                }
             )
         ),
         @ApiResponse(
@@ -187,44 +239,7 @@ public class SurveyController {
                 )
             )
         ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "옵션 없음",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = BaseResponse.class),
-                examples = @ExampleObject(
-                    name = "옵션 없음",
-                    summary = "설문 선택지를 찾을 수 없는 경우",
-                    value = """
-                    {
-                        "timestamp": "2025-07-17T12:00:00.000",
-                        "code": "SURVEY-404-003",
-                        "message": "설문 선택지를 찾을 수 없습니다."
-                    }
-                    """
-                )
-            )
-        ),
-        @ApiResponse(
-            responseCode = "409",
-            description = "중복 답변",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = BaseResponse.class),
-                examples = @ExampleObject(
-                    name = "중복 답변",
-                    summary = "이미 답변한 설문",
-                    value = """
-                    {
-                        "timestamp": "2025-07-17T12:00:00.000",
-                        "code": "SURVEY-409-001",
-                        "message": "이미 답변한 설문입니다."
-                    }
-                    """
-                )
-            )
-        ),
+
         @ApiResponse(
             responseCode = "500",
             description = "서버 내부 오류",
@@ -237,24 +252,23 @@ public class SurveyController {
                     value = """
                     {
                         "timestamp": "2025-07-17T12:00:00.000",
-                        "code": "SURVEY-500-001",
-                        "message": "설문 정보를 DB에 저장하는 중 오류가 발생했습니다."
+                        "code": "SURVEY-500-101",
+                        "message": "설문 답변을 DB에 저장하는 중 오류가 발생했습니다."
                     }
                     """
                 )
             )
         )
     })
-    @PostMapping("/answers/bulk")
-    public ResponseEntity<BaseResponse<String>> saveSurveyAnswersBulk(
+    @PostMapping("/answers")
+    public ResponseEntity<BaseResponse<SurveySaveResponseDto>> saveSurveyAnswersBulk(
             @RequestBody @Valid SurveyAnswersSubmitRequestDto dto,
             @CurrentUser PrincipalDetails userDetails
     ) {
-        System.out.println("answers: " + dto.getAnswers());
         return ResponseEntity.ok(BaseResponse.onSuccess(surveyService.saveSurveyAnswersBulk(dto, userDetails.getUserId())));
     }
 
-    @Operation(summary = "내 설문 이력+답변 전체 조회", description = "로그인 유저의 모든 설문 이력과 각 이력의 답변(질문/옵션/키값 포함)을 반환합니다.")
+    @Operation(summary = "내 설문 이력+답변 전체 조회", description = "유저의 모든 설문 이력과 각 이력의 답변(질문/옵션/키값 포함)을 반환합니다.")
     @ApiResponses({
         @ApiResponse(
             responseCode = "200",
@@ -270,7 +284,20 @@ public class SurveyController {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
-                        "result": [ /* ... */ ]
+                        "result": [
+                            {
+                                "historyId": 1,
+                                "createdAt": "2025-07-17T12:00:00.000",
+                                "answers": [
+                                    {
+                                        "questionId": 1,
+                                        "questionContent": "...",
+                                        "optionId": 1,
+                                        "optionContent": "..."
+                                    }
+                                ]
+                            }
+                        ]
                     }
                     """
                 )
@@ -337,7 +364,20 @@ public class SurveyController {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
-                        "result": [ /* ... */ ]
+                        "result": [
+                            {
+                                "questionId": 1,
+                                "questionContent": "...",
+                                "optionId": 1,
+                                "optionContent": "..."
+                            },
+                            {
+                                "questionId": 2,
+                                "questionContent": "...",
+                                "optionId": 3,
+                                "optionContent": "..."
+                            }
+                        ]
                     }
                     """
                 )
@@ -355,7 +395,7 @@ public class SurveyController {
                     value = """
                     {
                         "timestamp": "2025-07-17T12:00:00.000",
-                        "code": "SURVEY-404-004",
+                        "code": "SURVEY-404-003",
                         "message": "설문 답변을 찾을 수 없습니다."
                     }
                     """
@@ -374,24 +414,150 @@ public class SurveyController {
                     value = """
                     {
                         "timestamp": "2025-07-17T12:00:00.000",
-                        "code": "SURVEY-500-001",
-                        "message": "설문 정보를 DB에 저장하는 중 오류가 발생했습니다."
+                        "code": "SURVEY-500-002",
+                        "message": "설문 답변 조회 중 오류가 발생했습니다."
                     }
                     """
                 )
             )
         )
     })
-    @GetMapping("/answers/history/{historyId}")
+    @GetMapping("/histories/{historyId}/answers")
     public ResponseEntity<BaseResponse<List<SurveyAnswerResponseDto>>> getSurveyAnswersByHistory(@PathVariable Integer historyId) {
         return ResponseEntity.ok(BaseResponse.onSuccess(surveyService.getSurveyAnswersByHistory(historyId)));
     }
 
-    @Operation(summary = "FasiAPI 설문 답변 분석", description = "텍스트 답변과 신체정보를 받아 FasiAPI 서버로 전송, 분석 결과를 반환합니다.",
+    @Operation(summary = "저장된 설문 이력 분석", description = "이미 저장된 설문 이력의 답변을 FastAPI로 분석하여 체형 분석 결과를 반환합니다. (DB에서 이력 조회 후 분석)")
+    @Parameter(name = "historyId", description = "분석할 설문 이력 ID", required = true)
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "분석 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = @ExampleObject(
+                    name = "분석 성공 예시",
+                    summary = "FastAPI 분석 결과 반환",
+                    value = """
+                    {
+                        "timestamp": "2025-07-17T12:00:00.000",
+                        "code": "COMMON200",
+                        "message": "요청에 성공하였습니다.",
+                        "result": {
+                            "bodyType": "스트레이트형",
+                            "typeDescription": "탄탄하고 직선적인 느낌의 체형입니다.",
+                            "detailedFeatures": "근육이 잘 붙고, 어깨가 넓은 편입니다.",
+                            "attractionPoints": "탄탄한 상체",
+                            "recommendedStyles": "슬림핏, 미니멀룩",
+                            "avoidStyles": "오버핏",
+                            "stylingFixes": "허리 라인을 강조",
+                            "stylingTips": "밝은 컬러 활용"
+                        }
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "설문 이력 없음",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = @ExampleObject(
+                    name = "설문 이력 없음",
+                    summary = "해당 ID의 설문 이력을 찾을 수 없는 경우",
+                    value = """
+                    {
+                        "timestamp": "2025-07-17T12:00:00.000",
+                        "code": "SURVEY-404-001",
+                        "message": "설문을 찾을 수 없습니다."
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "502",
+            description = "FastAPI 호출 실패",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = {
+                    @ExampleObject(
+                        name = "FastAPI 서버 연결 실패",
+                        summary = "FastAPI 서버와 통신 실패",
+                        value = """
+                        {
+                            "timestamp": "2025-07-17T12:00:00.000",
+                            "code": "SURVEY-502-001",
+                            "message": "FAST API 호출에 실패했습니다.",
+                        }
+                        """
+                    ),
+                    @ExampleObject(
+                        name = "FastAPI 응답 오류",
+                        summary = "FastAPI에서 유효하지 않은 응답",
+                        value = """
+                        {
+                            "timestamp": "2025-07-17T12:00:00.000",
+                            "code": "SURVEY-502-002",
+                            "message": "FAST API에서 유효하지 않은 응답을 받았습니다.",
+                        }
+                        """
+                    )
+                }
+            )
+        )
+    })
+    @PostMapping("/histories/{historyId}/analysis")
+    public ResponseEntity<BaseResponse<SurveyResultFastApiResponseDto>> analyzeSurveyHistoryWithFast(
+            @PathVariable Integer historyId,
+            @CurrentUser PrincipalDetails userDetails
+    ) {
+        return ResponseEntity.ok(BaseResponse.onSuccess(surveyService.analyzeSurveyHistoryWithFast(historyId, userDetails.getUserId())));
+    }
+
+    @Operation(summary = "직접 답변 체형 분석", description = "사용자가 직접 입력한 텍스트 답변과 신체정보를 FastAPI 서버로 전송하여 체형 분석 결과를 반환합니다. (DB 저장 없이 즉시 분석)",
         requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "FasiAPI 분석용 텍스트 답변+신체정보 요청 DTO",
+            description = "FastAPI 분석용 텍스트 답변+신체정보 요청 DTO",
             required = true,
-            content = @Content(schema = @Schema(implementation = SurveyTextAnswersRequestDto.class))
+            content = @Content(
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = {
+                    @ExampleObject(
+                        name = "사용자 예시",
+                        summary = "사용자의 설문 답변과 신체정보",
+                        value = """
+                        {
+                          "answers": [
+                            "두께감이 있고 육감적이다",
+                            "피부가 탄탄하고 쫀득한 편이다",
+                            "근육이 붙기 쉽다",
+                            "목이 약간 짧은 편이다",
+                            "허리가 짧고 직선적인 느낌이며 굴곡이 적다",
+                            "두께감이 있고, 바스트 탑의 위치가 높다",
+                            "어깨가 넓고 직선적인 느낌이며, 탄탄한 인상을 준다",
+                            "엉덩이 라인의 위쪽부터 볼륨감이 있으며 탄력있다",
+                            "허벅지가 단단하고 근육이 많아 탄력이 있다",
+                            "손이 작고 손바닥에 두께감이 있다",
+                            "손목이 가늘고 둥근 편이다",
+                            "발이 작고 발목이 가늘며 단단하다",
+                            "무릎이 작고 부각되지 않는 편이다",
+                            "쇄골이 거의 보이지 않는다",
+                            "둥근 얼굴이며, 볼이 통통한 편이다",
+                            "상체가 발달한 느낌이며 허리가 짧고 탄탄한 인상을 준다",
+                            "팔, 가슴, 배 등 상체 위주로 찐다"
+                          ],
+                          "gender": "여성",
+                          "height": 164.5,
+                          "weight": 55.2
+                        }
+                        """
+                    )
+                }
+            )
         )
     )
     @ApiResponses({
@@ -403,13 +569,22 @@ public class SurveyController {
                 schema = @Schema(implementation = BaseResponse.class),
                 examples = @ExampleObject(
                     name = "분석 성공 예시",
-                    summary = "FasiAPI 분석 결과 반환",
+                    summary = "FastAPI 분석 결과 반환",
                     value = """
                     {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
-                        "result": { /* ... */ }
+                        "result": {
+                            "bodyType": "스트레이트형",
+                            "typeDescription": "탄탄하고 직선적인 느낌의 체형입니다.",
+                            "detailedFeatures": "근육이 잘 붙고, 어깨가 넓은 편입니다.",
+                            "attractionPoints": "탄탄한 상체",
+                            "recommendedStyles": "슬림핏, 미니멀룩",
+                            "avoidStyles": "오버핏",
+                            "stylingFixes": "허리 라인을 강조",
+                            "stylingTips": "밝은 컬러 활용"
+                        }
                     }
                     """
                 )
@@ -417,47 +592,28 @@ public class SurveyController {
         ),
         @ApiResponse(
             responseCode = "502",
-            description = "FasiAPI 호출 실패",
+            description = "FastAPI 호출 실패",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = BaseResponse.class),
                 examples = @ExampleObject(
-                    name = "FasiAPI 호출 실패",
-                    summary = "FasiAPI 서버와 통신 실패",
+                    name = "FastAPI 호출 실패",
+                    summary = "FastAPI 서버와 통신 실패",
                     value = """
                     {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "SURVEY-502-001",
-                        "message": "FASI API 호출에 실패했습니다."
-                    }
-                    """
-                )
-            )
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "서버 내부 오류",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = BaseResponse.class),
-                examples = @ExampleObject(
-                    name = "서버 오류",
-                    summary = "DB 오류",
-                    value = """
-                    {
-                        "timestamp": "2025-07-17T12:00:00.000",
-                        "code": "SURVEY-500-001",
-                        "message": "설문 정보를 DB에 저장하는 중 오류가 발생했습니다."
+                        "message": "FAST API 호출에 실패했습니다."
                     }
                     """
                 )
             )
         )
     })
-    @PostMapping("/answers/fasi")
-    public ResponseEntity<BaseResponse<SurveyResultFasiApiResponseDto>> analyzeSurveyAnswersWithFasi(
+    @PostMapping("/analysis")
+    public ResponseEntity<BaseResponse<SurveyResultFastApiResponseDto>> analyzeSurveyAnswersWithFast(
             @RequestBody SurveyTextAnswersRequestDto dto
     ) {
-        return ResponseEntity.ok(BaseResponse.onSuccess(surveyService.analyzeSurveyAnswersWithFasi(dto)));
+        return ResponseEntity.ok(BaseResponse.onSuccess(surveyService.analyzeSurveyAnswersWithFast(dto)));
     }
 } 

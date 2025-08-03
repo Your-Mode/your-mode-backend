@@ -21,7 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/content")
 @RequiredArgsConstructor
-@Tag(name = "컨텐츠 관리", description = "컨텐츠 생성, 수정, 조회 API")
+@Tag(name = "Contents: 생성, 수정, 조회 API", description = "Content 자동 생성, 수정, 조회 API")
 public class ContentController {
     private final ContentService contentService;
 

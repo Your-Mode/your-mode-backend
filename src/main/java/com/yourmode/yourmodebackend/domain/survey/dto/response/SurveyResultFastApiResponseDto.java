@@ -1,11 +1,13 @@
 package com.yourmode.yourmodebackend.domain.survey.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@Schema(description = "FasiAPI 분석 결과 응답 DTO")
-public class SurveyResultFasiApiResponseDto {
+@JsonPropertyOrder({"bodyType", "typeDescription", "detailedFeatures", "attractionPoints", "recommendedStyles", "avoidStyles", "stylingFixes", "stylingTips"})
+@Schema(description = "FastAPI 분석 결과 응답 DTO")
+public class SurveyResultFastApiResponseDto {
     @Schema(description = "체형 타입", example = "스트레이트형")
     private String bodyType;
     @Schema(description = "체형 설명", example = "탄탄하고 직선적인 느낌의 체형입니다.")

@@ -19,9 +19,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
-@RequestMapping("api/auth/password-reset")
+@RequestMapping("/api/auth/password-reset")
 @RequiredArgsConstructor
 @Tag(name = "Auth: 비밀번호 재설정", description = "SMS 인증 및 비밀번호 변경 관련 API")
 public class PasswordResetController {
@@ -260,7 +261,7 @@ public class PasswordResetController {
                     )
             )
     })
-    @PostMapping("/change-password")
+    @PutMapping("/change-password")
     public ResponseEntity<BaseResponse<String>> changePassword(@Valid @RequestBody PasswordChangeRequestDto request) {
         passwordResetService.changePassword(request);
         return ResponseEntity.ok(BaseResponse.onSuccess("비밀번호가 성공적으로 변경되었습니다."));
