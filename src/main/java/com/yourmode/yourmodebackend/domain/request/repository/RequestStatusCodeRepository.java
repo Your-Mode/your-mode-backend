@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface RequestStatusCodeRepository extends JpaRepository<RequestStatusCode, Long> {
+public interface RequestStatusCodeRepository extends JpaRepository<RequestStatusCode, Integer> {
 
     // 상태 이름으로 조회 (예: "신청 접수")
     Optional<RequestStatusCode> findByCodeName(String codeName);

@@ -43,7 +43,21 @@ public class EditorContentRequestController {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
-                        "result": [ /* ... */ ]
+                        "result": [
+                            {
+                                "id": 1,
+                                "userId": 123,
+                                "userName": "홍길동",
+                                "bodyFeature": "마른 체형",
+                                "situation": "데이트",
+                                "recommendedStyle": "캐주얼",
+                                "avoidedStyle": "정장",
+                                "budget": 500000,
+                                "isPublic": true,
+                                "status": "신청 접수",
+                                "createdAt": "2025-07-17T12:00:00.000"
+                            }
+                        ]
                     }
                     """
                 )
@@ -113,7 +127,25 @@ public class EditorContentRequestController {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
-                        "result": { /* ... */ }
+                        "result": {
+                            "id": 1,
+                            "profile": {
+                                "userId": 123,
+                                "userName": "홍길동",
+                                "email": "hong@example.com",
+                                "phoneNumber": "010-1234-5678"
+                            },
+                            "bodyFeature": "마른 체형",
+                            "situation": "데이트",
+                            "recommendedStyle": "캐주얼",
+                            "avoidedStyle": "정장",
+                            "budget": 500000,
+                            "isPublic": true,
+                            "status": "신청 접수",
+                            "itemCategoryIds": [1, 2, 3],
+                            "itemCategoryNames": ["상의", "하의", "신발"],
+                            "createdAt": "2025-07-17T12:00:00.000"
+                        }
                     }
                     """
                 )
@@ -187,7 +219,7 @@ public class EditorContentRequestController {
         return ResponseEntity.ok(BaseResponse.onSuccess(detailDto));
     }
 
-    @Operation(summary = "요청 상태 변경", description = "에디터가 요청의 상태를 변경합니다.")
+    @Operation(summary = "요청 상태 변경", description = "에디터가 요청의 상태를 변경합니다. statusId는 상태 코드의 ID를 입력하세요.")
     @ApiResponses({
         @ApiResponse(
             responseCode = "200",
@@ -308,11 +340,11 @@ public class EditorContentRequestController {
     @PutMapping("/{id}/status")
     public ResponseEntity<BaseResponse<Void>> updateRequestStatus(
             @PathVariable Integer id,
-            @RequestParam String statusCode,
+            @RequestParam Integer statusId,
             @CurrentUser PrincipalDetails userDetails
     ) {
         validateAdminAccess(userDetails);
-        editorContentRequestService.updateStatus(id, statusCode, userDetails.getUserId());
+        editorContentRequestService.updateStatus(id, statusId, userDetails.getUserId());
         return ResponseEntity.ok(BaseResponse.onSuccess(null));
     }
 

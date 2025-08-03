@@ -117,10 +117,10 @@ public class EditorContentRequestServiceImpl implements EditorContentRequestServ
 
     @Override
     @Transactional
-    public void updateStatus(Integer requestId, String statusCode, Integer editorId) {
+    public void updateStatus(Integer requestId, Integer statusId, Integer editorId) {
         ContentRequest request = contentRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND));
-        RequestStatusCode newStatus = requestStatusCodeRepository.findByCodeName(statusCode)
+        RequestStatusCode newStatus = requestStatusCodeRepository.findById(statusId)
                 .orElseThrow(() -> new RestApiException(RequestErrorStatus.INVALID_REQUEST_STATUS));
         User editor = userRepository.findById(editorId)
                 .orElseThrow(() -> new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND));

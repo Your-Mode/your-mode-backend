@@ -19,7 +19,7 @@ import org.springframework.http.MediaType;
 @RestController
 @RequestMapping("/api/content/s3")
 @RequiredArgsConstructor
-@Tag(name = "S3 파일 관리", description = "S3 파일 업로드 및 presigned URL 관리 API")
+@Tag(name = "Contents: S3 파일 업로드 및 presigned URL 관리 API", description = "S3 파일 업로드 및 presigned URL 관리 API")
 public class S3Controller {
 
     private final S3Service s3Service;

@@ -44,7 +44,17 @@ public class UserContentRequestController {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
-                        "result": { /* ... */ }
+                        "result": {
+                            "id": 1,
+                            "bodyFeature": "마른 체형",
+                            "situation": "데이트",
+                            "recommendedStyle": "캐주얼",
+                            "avoidedStyle": "정장",
+                            "budget": 500000,
+                            "isPublic": true,
+                            "status": "신청 접수",
+                            "createdAt": "2025-07-17T12:00:00.000"
+                        }
                     }
                     """
                 )
@@ -267,7 +277,19 @@ public class UserContentRequestController {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
-                        "result": [ /* ... */ ]
+                        "result": [
+                            {
+                                "id": 1,
+                                "bodyFeature": "마른 체형",
+                                "situation": "데이트",
+                                "recommendedStyle": "캐주얼",
+                                "avoidedStyle": "정장",
+                                "budget": 500000,
+                                "isPublic": true,
+                                "status": "신청 접수",
+                                "createdAt": "2025-07-17T12:00:00.000"
+                            }
+                        ]
                     }
                     """
                 )
@@ -337,7 +359,19 @@ public class UserContentRequestController {
                         "timestamp": "2025-07-17T12:00:00.000",
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
-                        "result": { /* ... */ }
+                        "result": {
+                            "id": 1,
+                            "bodyFeature": "마른 체형",
+                            "situation": "데이트",
+                            "recommendedStyle": "캐주얼",
+                            "avoidedStyle": "정장",
+                            "budget": 500000,
+                            "isPublic": true,
+                            "status": "신청 접수",
+                            "itemCategoryIds": [1, 2, 3],
+                            "itemCategoryNames": ["상의", "하의", "신발"],
+                            "createdAt": "2025-07-17T12:00:00.000"
+                        }
                     }
                     """
                 )
