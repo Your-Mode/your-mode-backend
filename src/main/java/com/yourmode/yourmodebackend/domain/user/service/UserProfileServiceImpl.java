@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.yourmode.yourmodebackend.domain.user.entity.UserCredential;
 import com.yourmode.yourmodebackend.domain.user.repository.UserCredentialRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -60,7 +61,7 @@ public class UserProfileServiceImpl implements UserProfileService {
      * @param userId 사용자 ID
      * @param dto 프로필 수정 요청 DTO
      * @return UserProfileResponseDto
-     * @throws RestApiException ACCESS_DENIED, USER_NOT_FOUND, PROFILE_NOT_FOUND, BODY_TYPE_NOT_FOUND 등
+     * @throws RestApiException ACCESS_DENIED, USER_NOT_FOUND, PROFILE_NOT_FOUND, BODY_TYPE_NOT_FOUND, DUPLICATE_PHONE_NUMBER 등
      */
     @Transactional
     public UserProfileResponseDto updateMyProfile(Integer userId, UserProfileUpdateRequestDto dto) {
@@ -74,6 +75,13 @@ public class UserProfileServiceImpl implements UserProfileService {
         UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.PROFILE_NOT_FOUND));
 
+        // 전화번호 중복 체크 (다른 사용자가 이미 사용 중인 경우)
+        if (!dto.getPhoneNumber().equals(user.getPhoneNumber()) && 
+            userRepository.existsByPhoneNumber(dto.getPhoneNumber())) {
+            throw new RestApiException(UserErrorStatus.DUPLICATE_PHONE_NUMBER);
+        }
+
+        // 바디타입 존재 여부 체크
         BodyType bodyType = bodyTypeRepository.findById(dto.getBodyTypeId())
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.BODY_TYPE_NOT_FOUND));
 
@@ -99,7 +107,7 @@ public class UserProfileServiceImpl implements UserProfileService {
      * 사용자의 비밀번호를 변경합니다.
      * @param userId 사용자 ID
      * @param newPassword 새 비밀번호(암호화 전)
-     * @throws RestApiException ACCESS_DENIED, USER_NOT_FOUND, CREDENTIAL_NOT_FOUND 등
+     * @throws RestApiException ACCESS_DENIED, USER_NOT_FOUND, CREDENTIAL_NOT_FOUND, INVALID_PASSWORD_FORMAT 등
      */
     @Transactional
     public void updatePassword(Integer userId, String newPassword) {
@@ -107,12 +115,35 @@ public class UserProfileServiceImpl implements UserProfileService {
             throw new RestApiException(UserErrorStatus.ACCESS_DENIED);
         }
         
+        // 비밀번호 유효성 검증
+        validatePassword(newPassword);
+        
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
         UserCredential credential = userCredentialRepository.findByUser(user)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.CREDENTIAL_NOT_FOUND));
         credential.setPasswordHash(passwordEncoder.encode(newPassword));
         userCredentialRepository.save(credential);
+    }
+
+    /**
+     * 비밀번호 유효성을 검증합니다.
+     * @param password 검증할 비밀번호
+     * @throws RestApiException INVALID_PASSWORD_FORMAT
+     */
+    private void validatePassword(String password) {
+        if (password == null || password.length() < 8) {
+            throw new RestApiException(UserErrorStatus.INVALID_PASSWORD_FORMAT);
+        }
+        
+        // 영문, 숫자, 특수문자 포함 여부 체크
+        boolean hasLetter = Pattern.compile("[a-zA-Z]").matcher(password).find();
+        boolean hasDigit = Pattern.compile("\\d").matcher(password).find();
+        boolean hasSpecial = Pattern.compile("[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]").matcher(password).find();
+        
+        if (!hasLetter || !hasDigit || !hasSpecial) {
+            throw new RestApiException(UserErrorStatus.INVALID_PASSWORD_FORMAT);
+        }
     }
 }
 

@@ -181,6 +181,44 @@ public class UserProfileController {
                     """
                 )
             )
+        ),
+        @ApiResponse(
+            responseCode = "409",
+            description = "전화번호 중복",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = @ExampleObject(
+                    name = "전화번호 중복",
+                    summary = "다른 사용자가 이미 사용 중인 전화번호인 경우",
+                    value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:00.000",
+                        "code": "AUTH-409-002",
+                        "message": "이미 사용 중인 전화번호입니다."
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "체형 정보 없음",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = @ExampleObject(
+                    name = "체형 정보 없음",
+                    summary = "존재하지 않는 체형 ID인 경우",
+                    value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:00.000",
+                        "code": "AUTH-404-005",
+                        "message": "해당 체형 정보를 찾을 수 없습니다."
+                    }
+                    """
+                )
+            )
         )
     })
     @PutMapping("/me")
@@ -247,7 +285,7 @@ public class UserProfileController {
                     {
                         "timestamp": "2025-06-29T12:36:00.000",
                         "code": "AUTH-400-001",
-                        "message": "비밀번호는 최소 8자 이상이어야 합니다."
+                        "message": "비밀번호는 8자 이상, 영문/숫자/특수문자를 포함해야 합니다."
                     }
                     """
                 )
@@ -266,7 +304,7 @@ public class UserProfileController {
                     {
                         "timestamp": "2025-06-29T12:37:00.000",
                         "code": "AUTH-401-001",
-                        "message": "인증이 필요합니다."
+                        "message": "인증에 실패했습니다."
                     }
                     """
                 )
@@ -303,8 +341,8 @@ public class UserProfileController {
                     value = """
                     {
                         "timestamp": "2025-06-29T12:38:00.000",
-                        "code": "AUTH-500-001",
-                        "message": "비밀번호 변경 처리 중 오류가 발생했습니다."
+                        "code": "AUTH-500-007",
+                        "message": "비밀번호 변경에 실패했습니다."
                     }
                     """
                 )

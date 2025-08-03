@@ -186,7 +186,7 @@ public class AuthController {
                     {
                         "timestamp": "2025-06-29T12:35:04.321",
                         "code": "AUTH-500-003",
-                        "message": "프로필 정보를 저장하는 도중 오류가 발생했습니다."
+                        "message": "사용자 프로필 저장 중 오류가 발생했습니다."
                     }
                     """
                                     ),
@@ -438,7 +438,7 @@ public class AuthController {
                                     value = """
                 {
                     "timestamp": "2025-06-29T12:45:00.000",
-                    "code": "AUTH-400-001",
+                    "code": "AUTH-400-005",
                     "message": "인가 코드가 필요합니다."
                 }
                 """
@@ -621,7 +621,7 @@ public class AuthController {
                     {
                         "timestamp": "2025-06-29T12:35:04.321",
                         "code": "AUTH-500-003",
-                        "message": "프로필 정보를 저장하는 도중 오류가 발생했습니다."
+                        "message": "사용자 프로필 저장 중 오류가 발생했습니다."
                     }
                     """
                                     ),
@@ -705,8 +705,8 @@ public class AuthController {
                                     value = """
             {
                 "timestamp": "2025-06-29T12:45:00.000",
-                "code": "USER-404-001",
-                "message": "사용자를 찾을 수 없습니다."
+                "code": "AUTH-404-001",
+                "message": "해당 이메일의 사용자를 찾을 수 없습니다."
             }
             """
                             )
@@ -724,7 +724,7 @@ public class AuthController {
                                     value = """
             {
                 "timestamp": "2025-06-29T12:45:00.000",
-                "code": "USER-404-001",
+                "code": "AUTH-401-005",
                 "message": "유효하지 않은 토큰입니다."
             }
             """
@@ -790,8 +790,8 @@ public class AuthController {
                                     value = """
                 {
                   "timestamp": "2025-06-30T10:25:00.000",
-                  "code": "AUTH-400-002",
-                  "message": "활성화된 세션이 존재하지 않습니다."
+                  "code": "AUTH-400-006",
+                  "message": "로그아웃할 활성 세션이 존재하지 않습니다."
                 }
                 """
                             )
