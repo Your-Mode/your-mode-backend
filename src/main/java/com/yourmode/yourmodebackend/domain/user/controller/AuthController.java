@@ -1,6 +1,7 @@
 package com.yourmode.yourmodebackend.domain.user.controller;
 
 import com.yourmode.yourmodebackend.domain.user.dto.request.*;
+import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResultDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResponseDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.UserIdResponseDto;
 import com.yourmode.yourmodebackend.domain.user.service.AuthService;
@@ -17,13 +18,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 
 @Slf4j
 @RestController
@@ -104,10 +105,11 @@ public class AuthController {
                     "message": "요청에 성공하였습니다.",
                     "result": {
                         "user": {
-                            "name": "홍길동",
-                            "role": "USER"
-                        },
-                        "additionalInfoNeeded": null
+                             "name": "string",
+                             "email": "test1234@example.com",
+                             "role": "USER",
+                             "isNewUser": false
+                        }
                     }
                 }
                 """
@@ -244,7 +246,7 @@ public class AuthController {
             @Valid @RequestBody LocalSignupRequestDto request,
             HttpServletResponse response
     ) {
-        AuthService.AuthResult authResult = authService.signUp(request);
+        AuthResultDto authResult = authService.signUp(request);
 
         // 토큰을 쿠키로 설정
         setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
@@ -279,10 +281,11 @@ public class AuthController {
                     "message": "요청에 성공하였습니다.",
                     "result": {
                         "user": {
-                            "name": "홍길동",
-                            "role": "USER"
-                        },
-                        "additionalInfoNeeded": null
+                            "name": "string",
+                            "email": "test1234@example.com",
+                            "role": "USER",
+                            "isNewUser": false
+                        }
                     }
                 }
                 """)
@@ -326,7 +329,7 @@ public class AuthController {
             @Valid @RequestBody LocalLoginRequestDto request,
             HttpServletResponse response
     ) {
-        AuthService.AuthResult authResult = authService.login(request);
+        AuthResultDto authResult = authService.login(request);
 
         // 토큰을 쿠키로 설정
         setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
@@ -500,7 +503,7 @@ public class AuthController {
             @Valid @RequestBody KakaoLoginRequestDto request,
             HttpServletResponse response
     ) {
-        AuthService.AuthResult authResult = authService.processKakaoLogin(request);
+        AuthResultDto authResult = authService.processKakaoLogin(request);
         
         // 토큰이 있으면 쿠키로 설정 (기존 회원)
         if (authResult.tokenPair().accessToken() != null && authResult.tokenPair().refreshToken() != null) {
@@ -664,7 +667,7 @@ public class AuthController {
             @Valid @RequestBody KakaoSignupRequestDto request,
             HttpServletResponse response
     ) {
-                        AuthService.AuthResult authResult = authService.completeSignupWithKakao(request);
+                        AuthResultDto authResult = authService.completeSignupWithKakao(request);
 
         // 토큰을 쿠키로 설정
         setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
@@ -755,7 +758,7 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        AuthService.AuthResult authResult = authService.refreshAccessToken(request);
+        AuthResultDto authResult = authService.refreshAccessToken(request);
 
         // 토큰을 쿠키로 설정
         setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());

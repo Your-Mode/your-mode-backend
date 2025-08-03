@@ -2,7 +2,9 @@ package com.yourmode.yourmodebackend.domain.user.service;
 
 import com.yourmode.yourmodebackend.domain.user.entity.*;
 import com.yourmode.yourmodebackend.domain.user.dto.request.*;
+import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResultDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResponseDto;
+import com.yourmode.yourmodebackend.domain.user.dto.response.TokenPairDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.UserIdResponseDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.UserInfoDto;
 import com.yourmode.yourmodebackend.domain.user.enums.OAuthProvider;
@@ -80,7 +82,7 @@ public class AuthServiceImpl implements AuthService{
      *         - 인증 실패 시 AUTHENTICATION_FAILED 상태로 예외 발생
      */
     @Transactional
-    public AuthResult signUp(LocalSignupRequestDto request) {
+    public AuthResultDto signUp(LocalSignupRequestDto request) {
         // 이메일 중복 체크 후 중복되면 예외 발생
         validateDuplicateEmail(request.getEmail());
 
@@ -113,7 +115,7 @@ public class AuthServiceImpl implements AuthService{
             UserInfoDto userInfo = buildUserInfoDto(user);
 
             // 토큰 쌍과 사용자 정보 반환
-            return new AuthResult(new TokenPair(access.token(), refresh.token()), userInfo);
+            return new AuthResultDto(new TokenPairDto(access.token(), refresh.token()), userInfo);
 
         } catch (AuthenticationException ex) {
             throw new RestApiException(UserErrorStatus.AUTHENTICATION_FAILED);
@@ -283,7 +285,7 @@ public class AuthServiceImpl implements AuthService{
      * @throws RestApiException 인증 실패 시 AUTHENTICATION_FAILED 상태로 예외 발생
      */
     @Transactional
-    public AuthResult login(LocalLoginRequestDto request) {
+    public AuthResultDto login(LocalLoginRequestDto request) {
         try {
             // 인증 토큰 생성: 이메일, 비밀번호 정보 포함
             UsernamePasswordAuthenticationToken authenticationToken =
@@ -311,7 +313,7 @@ public class AuthServiceImpl implements AuthService{
             UserInfoDto userInfo = buildUserInfoDto(user);
 
             // 토큰 쌍과 사용자 정보 반환
-            return new AuthResult(new TokenPair(access.token(), refresh.token()), userInfo);
+            return new AuthResultDto(new TokenPairDto(access.token(), refresh.token()), userInfo);
 
         } catch (BadCredentialsException e) {
             throw new RestApiException(UserErrorStatus.INVALID_CREDENTIALS);
@@ -395,7 +397,7 @@ public class AuthServiceImpl implements AuthService{
      * @throws RestApiException 토큰 발급 실패, 이메일 누락, 회원 미존재 등 예외 상황
      */
     @Transactional
-    public AuthResult processKakaoLogin(KakaoLoginRequestDto request) {
+    public AuthResultDto processKakaoLogin(KakaoLoginRequestDto request) {
         // 카카오 토큰 발급
         Map<String, Object> tokenInfo = requestTokenWithKakao(request.getAuthorizationCode());
         String accessToken = (String) tokenInfo.get("access_token");
@@ -427,7 +429,7 @@ public class AuthServiceImpl implements AuthService{
                     .isNewUser(true)
                     .build();
 
-            return new AuthResult(new TokenPair(null, null), userInfo);
+            return new AuthResultDto(new TokenPairDto(null, null), userInfo);
         }
 
         User user = userRepository.findByEmailWithProfile(email)
@@ -454,7 +456,7 @@ public class AuthServiceImpl implements AuthService{
                 .isNewUser(false)
                 .build();
 
-        return new AuthResult(new TokenPair(access.token(), refresh.token()), userInfo);
+        return new AuthResultDto(new TokenPairDto(access.token(), refresh.token()), userInfo);
     }
 
     /**
@@ -467,10 +469,10 @@ public class AuthServiceImpl implements AuthService{
      * 6) 로그인 완료 응답 반환
      *
      * @param request 카카오 회원가입 요청 DTO (추가 정보 포함)
-     * @return 로그인 응답 DTO (JWT 토큰, 사용자 정보 등)
+     * @return JWT 토큰과 유저 정보가 포함된 응답 DTO
      */
     @Transactional
-    public AuthResult completeSignupWithKakao(KakaoSignupRequestDto request) {
+    public AuthResultDto completeSignupWithKakao(KakaoSignupRequestDto request) {
         // 이메일 중복 체크 및 회원 생성, 저장
         validateDuplicateEmail(request.getEmail());
         User user = createAndSaveUser(request);
@@ -497,18 +499,18 @@ public class AuthServiceImpl implements AuthService{
         UserInfoDto userInfo = buildUserInfoDto(user);
 
         // 토큰 쌍과 사용자 정보 반환
-        return new AuthResult(new TokenPair(access.token(), refresh.token()), userInfo);
+        return new AuthResultDto(new TokenPairDto(access.token(), refresh.token()), userInfo);
     }
 
     /**
      * 리프레시 토큰을 사용하여 액세스 토큰을 재발급하는 메서드
      *
      * @param request HttpServletRequest - 쿠키에서 리프레시 토큰을 추출
-     * @return AuthResponseDto 사용자 정보가 포함된 응답 DTO (토큰은 쿠키로 설정됨)
+     * @return JWT 토큰과 유저 정보가 포함된 응답 DTO
      * @throws RestApiException 토큰 유효성 실패 혹은 사용자 정보 미발견 시 예외 발생
      */
     @Transactional
-    public AuthResult refreshAccessToken(HttpServletRequest request) {
+    public AuthResultDto refreshAccessToken(HttpServletRequest request) {
         // 쿠키에서 리프레시 토큰 추출
         String refreshToken = null;
         if (request.getCookies() != null) {
@@ -554,7 +556,7 @@ public class AuthServiceImpl implements AuthService{
         UserInfoDto userInfo = buildUserInfoDto(user);
 
         // 토큰 쌍과 사용자 정보 반환
-        return new AuthResult(new TokenPair(newAccess.token(), newRefresh.token()), userInfo);
+        return new AuthResultDto(new TokenPairDto(newAccess.token(), newRefresh.token()), userInfo);
     }
 
 

@@ -8,5 +8,4 @@ public interface PasswordResetService {
     void sendSMS(SmsSendRequestDto request);
     void verifyCode(SmsVerifyRequestDto request);
     void changePassword(PasswordChangeRequestDto request);
-
 }
