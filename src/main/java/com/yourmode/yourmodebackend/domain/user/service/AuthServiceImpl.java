@@ -385,21 +385,63 @@ public class AuthServiceImpl implements AuthService{
         }
     }
 
+
+
     /**
-     * 카카오 인가 코드로 로그인 처리하는 메서드
-     * 1) 인가 코드로 토큰 발급
-     * 2) 토큰으로 사용자 정보 조회
-     * 3) 이메일로 회원가입 여부 확인
-     * 4) 신규회원이면 null 토큰과 사용자 정보를 반환, 기존 회원이면 JWT 발급하여 로그인 처리
+     * 카카오 회원가입 완료 처리 메서드
+     * 1) 이메일 중복 여부 확인
+     * 2) User 엔티티 생성 및 저장
+     * 3) UserCredential 저장 (비밀번호는 null, Kakao OAuth 정보 포함)
+     * 4) UserProfile 저장 (키, 몸무게, 성별, 체형 등 프로필 정보)
+     * 5) JWT 토큰 생성 및 저장
+     * 6) 로그인 완료 응답 반환
      *
-     * @param request authorizationCode 카카오 인가 코드
-     * @return 인증 결과 (토큰 쌍과 사용자 정보)
-     * @throws RestApiException 토큰 발급 실패, 이메일 누락, 회원 미존재 등 예외 상황
+     * @param request 카카오 회원가입 요청 DTO (추가 정보 포함)
+     * @return JWT 토큰과 유저 정보가 포함된 응답 DTO
      */
     @Transactional
-    public AuthResultDto processKakaoLogin(KakaoLoginRequestDto request) {
+    public AuthResultDto completeSignupWithKakao(KakaoSignupRequestDto request) {
+        // 이메일 중복 체크 및 회원 생성, 저장
+        validateDuplicateEmail(request.getEmail());
+        User user = createAndSaveUser(request);
+        saveUserCredential(user, null, OAuthProvider.KAKAO, null);
+        saveUserProfile(user, request);
+
+        // PrincipalDetails 생성 (password는 null or "")
+        PrincipalDetails principalDetails = new PrincipalDetails(user, "");
+
+        // 인증 토큰 생성 (인증매니저가 처리할 authentication)
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(principalDetails, null, principalDetails.getAuthorities());
+
+        // 인증 성공 시 SecurityContext에 저장 (로그인 상태 유지)
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // JWT 토큰 생성 및 저장
+        Integer userId = user.getId();
+        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId, user.getEmail());
+        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, user.getEmail());
+        saveUserToken(user, refresh.token(), refresh.expiry());
+
+        // 사용자 정보 생성
+        UserInfoDto userInfo = buildUserInfoDto(user);
+
+        // 토큰 쌍과 사용자 정보 반환
+        return new AuthResultDto(new TokenPairDto(access.token(), refresh.token()), userInfo);
+    }
+
+    /**
+     * 카카오 콜백 처리를 위한 메서드
+     * 신규 사용자인 경우 토큰을 null로 설정하고, 기존 사용자인 경우 토큰을 설정합니다.
+     *
+     * @param code 카카오 인가 코드
+     * @return JWT 토큰과 유저 정보가 포함된 응답 DTO (신규 사용자는 토큰이 null)
+     * @throws RestApiException 카카오 API 호출 실패 시 예외 발생
+     */
+    @Transactional
+    public AuthResultDto handleKakaoCallback(String code) {
         // 카카오 토큰 발급
-        Map<String, Object> tokenInfo = requestTokenWithKakao(request.getAuthorizationCode());
+        Map<String, Object> tokenInfo = requestTokenWithKakao(code);
         String accessToken = (String) tokenInfo.get("access_token");
 
         // 카카오 사용자 정보 조회
@@ -456,49 +498,6 @@ public class AuthServiceImpl implements AuthService{
                 .isNewUser(false)
                 .build();
 
-        return new AuthResultDto(new TokenPairDto(access.token(), refresh.token()), userInfo);
-    }
-
-    /**
-     * 카카오 회원가입 완료 처리 메서드
-     * 1) 이메일 중복 여부 확인
-     * 2) User 엔티티 생성 및 저장
-     * 3) UserCredential 저장 (비밀번호는 null, Kakao OAuth 정보 포함)
-     * 4) UserProfile 저장 (키, 몸무게, 성별, 체형 등 프로필 정보)
-     * 5) JWT 토큰 생성 및 저장
-     * 6) 로그인 완료 응답 반환
-     *
-     * @param request 카카오 회원가입 요청 DTO (추가 정보 포함)
-     * @return JWT 토큰과 유저 정보가 포함된 응답 DTO
-     */
-    @Transactional
-    public AuthResultDto completeSignupWithKakao(KakaoSignupRequestDto request) {
-        // 이메일 중복 체크 및 회원 생성, 저장
-        validateDuplicateEmail(request.getEmail());
-        User user = createAndSaveUser(request);
-        saveUserCredential(user, null, OAuthProvider.KAKAO, null);
-        saveUserProfile(user, request);
-
-        // PrincipalDetails 생성 (password는 null or "")
-        PrincipalDetails principalDetails = new PrincipalDetails(user, "");
-
-        // 인증 토큰 생성 (인증매니저가 처리할 authentication)
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(principalDetails, null, principalDetails.getAuthorities());
-
-        // 인증 성공 시 SecurityContext에 저장 (로그인 상태 유지)
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // JWT 토큰 생성 및 저장
-        Integer userId = user.getId();
-        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId, user.getEmail());
-        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, user.getEmail());
-        saveUserToken(user, refresh.token(), refresh.expiry());
-
-        // 사용자 정보 생성
-        UserInfoDto userInfo = buildUserInfoDto(user);
-
-        // 토큰 쌍과 사용자 정보 반환
         return new AuthResultDto(new TokenPairDto(access.token(), refresh.token()), userInfo);
     }
 

@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public interface AuthService {
     AuthResultDto signUp(LocalSignupRequestDto request);
     AuthResultDto login(LocalLoginRequestDto request);
-    AuthResultDto processKakaoLogin(KakaoLoginRequestDto request);
+    AuthResultDto handleKakaoCallback(String code);
     AuthResultDto completeSignupWithKakao(KakaoSignupRequestDto request);
     AuthResultDto refreshAccessToken(HttpServletRequest request);
     UserIdResponseDto logout(PrincipalDetails principal);
