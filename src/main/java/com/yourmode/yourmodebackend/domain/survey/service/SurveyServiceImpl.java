@@ -31,7 +31,7 @@ public class SurveyServiceImpl implements SurveyService {
     private final SurveyOptionRepository surveyOptionRepository;
     private final SurveyAnswerRepository surveyAnswerRepository;
     private final UserRepository userRepository;
-    private static final String FAST_API_URL = "FAST_API_URL"; // 실제 주소로 교체
+    private static final String FAST_API_URL = "https://fast.yourmode.co.kr/assistant/diagnosis"; // 실제 주소로 교체
 
     /**
      * 텍스트 답변과 신체정보를 받아 FastAPI 서버로 직접 전송하여 분석 결과를 반환합니다.
@@ -66,10 +66,6 @@ public class SurveyServiceImpl implements SurveyService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             
-            // 디버깅을 위한 로그
-            System.out.println("FastAPI 요청 URL: " + FAST_API_URL);
-            System.out.println("FastAPI 요청 데이터: " + dto);
-            
             HttpEntity<SurveyTextAnswersRequestDto> requestEntity = new HttpEntity<>(dto, headers);
             
             ResponseEntity<SurveyResultFastApiResponseDto> responseEntity = restTemplate.exchange(
@@ -84,15 +80,11 @@ public class SurveyServiceImpl implements SurveyService {
             if (response == null) {
                 throw new RestApiException(SurveyErrorStatus.FAST_API_INVALID_RESPONSE);
             }
-            
-            // 디버깅을 위한 로그
-            System.out.println("FastAPI 응답: " + response);
-            
+        
             return response;
         } catch (RestApiException e) {
             throw e;
         } catch (Exception e) {
-            // 상세한 에러 로그
             System.err.println("FastAPI 호출 실패: " + e.getMessage());
             e.printStackTrace();
             throw new RestApiException(SurveyErrorStatus.FAST_API_FAILED);
