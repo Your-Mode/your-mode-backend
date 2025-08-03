@@ -235,7 +235,7 @@ public class AuthServiceImpl implements AuthService{
         profile.setWeight(request.getWeight());
 
         BodyType bodyType = bodyTypeRepository.findById(request.getBodyTypeId())
-                .orElseThrow(() -> new RestApiException(UserErrorStatus.INVALID_BODY_TYPE));
+                .orElseThrow(() -> new RestApiException(UserErrorStatus.BODY_TYPE_NOT_FOUND));
 
         profile.setBodyType(bodyType);
 
