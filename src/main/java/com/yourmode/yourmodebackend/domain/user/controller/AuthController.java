@@ -1,10 +1,13 @@
 package com.yourmode.yourmodebackend.domain.user.controller;
 
 import com.yourmode.yourmodebackend.domain.user.dto.request.*;
+import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResultDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResponseDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.UserIdResponseDto;
 import com.yourmode.yourmodebackend.domain.user.service.AuthService;
+import com.yourmode.yourmodebackend.domain.user.status.UserErrorStatus;
 import com.yourmode.yourmodebackend.global.common.base.BaseResponse;
+import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
 import com.yourmode.yourmodebackend.global.config.security.auth.CurrentUser;
 import com.yourmode.yourmodebackend.global.config.security.auth.PrincipalDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,13 +20,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 
 @Slf4j
 @RestController
@@ -104,10 +107,11 @@ public class AuthController {
                     "message": "요청에 성공하였습니다.",
                     "result": {
                         "user": {
-                            "name": "홍길동",
-                            "role": "USER"
-                        },
-                        "additionalInfoNeeded": null
+                             "name": "string",
+                             "email": "test1234@example.com",
+                             "role": "USER",
+                             "isNewUser": false
+                        }
                     }
                 }
                 """
@@ -244,7 +248,7 @@ public class AuthController {
             @Valid @RequestBody LocalSignupRequestDto request,
             HttpServletResponse response
     ) {
-        AuthService.AuthResult authResult = authService.signUp(request);
+        AuthResultDto authResult = authService.signUp(request);
 
         // 토큰을 쿠키로 설정
         setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
@@ -279,10 +283,11 @@ public class AuthController {
                     "message": "요청에 성공하였습니다.",
                     "result": {
                         "user": {
-                            "name": "홍길동",
-                            "role": "USER"
-                        },
-                        "additionalInfoNeeded": null
+                            "name": "string",
+                            "email": "test1234@example.com",
+                            "role": "USER",
+                            "isNewUser": false
+                        }
                     }
                 }
                 """)
@@ -326,7 +331,7 @@ public class AuthController {
             @Valid @RequestBody LocalLoginRequestDto request,
             HttpServletResponse response
     ) {
-        AuthService.AuthResult authResult = authService.login(request);
+        AuthResultDto authResult = authService.login(request);
 
         // 토큰을 쿠키로 설정
         setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
@@ -354,8 +359,8 @@ public class AuthController {
      * @return 카카오 인증 URL
      */
     @Operation(
-            summary = "카카오 로그인 인증 요청(임시)",
-            description = "카카오 인증 URL을 반환합니다."
+            summary = "카카오 로그인 인증 요청",
+            description = "카카오 인증 URL을 반환합니다. 프론트엔드에서 이 URL로 리다이렉트하여 카카오 로그인을 진행합니다."
     )
     @CrossOrigin(origins = "*", allowedHeaders = "*")
     @GetMapping("/oauth2/kakao/authorize")
@@ -368,28 +373,21 @@ public class AuthController {
         return ResponseEntity.ok(BaseResponse.onSuccess(kakaoAuthUrl));
     }
 
-    /**
-     * 카카오 로그인 요청 처리.
-     *
-     * @param request KakaoLoginRequestDto - 카카오 인가 코드를 담은 데이터
-     * @param response 쿠키 설정을 위한 HttpServletResponse
-     * @return 로그인 성공 시 유저 정보가 포함된 응답을 반환
-     */
     @Operation(
-            summary = "카카오 로그인 요청 처리",
-            description = "인가 코드(code)를 받아 카카오 로그인 처리를 수행합니다. 신규 회원일 시 \"additionalInfoNeeded\"에 사용자 정보를 담아 반환합니다."
+            summary = "카카오 로그인 콜백 처리",
+            description = "카카오 인증 후 리다이렉트되는 콜백 URL입니다. 인가 코드를 받아 로그인 처리를 수행합니다. 신규 사용자인 경우 추가 정보 입력이 필요하며, 기존 사용자인 경우 바로 로그인됩니다."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "로그인 성공 (추가 정보 필요 여부에 따라 결과가 다름)",
+                    description = "로그인 성공 또는 추가 정보 필요",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = BaseResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "추가 정보가 필요 없는 로그인 성공",
-                                            summary = "기존 회원 로그인 성공, 추가 정보 필요 없음",
+                                            name = "기존 사용자 로그인 성공",
+                                            summary = "기존 사용자 카카오 로그인 성공 (토큰 설정됨)",
                                             value = """
                 {
                     "timestamp": "2025-06-29T12:34:56.789",
@@ -398,26 +396,28 @@ public class AuthController {
                     "result": {
                         "user": {
                             "name": "홍길동",
+                            "email": "user@example.com",
                             "role": "USER",
-                        },
-                        "additionalInfoNeeded": null
+                            "isNewUser": false
+                        }
                     }
                 }
                 """
                                     ),
                                     @ExampleObject(
-                                            name = "추가 정보가 필요한 로그인 성공",
-                                            summary = "신규 회원 로그인 성공, 추가 정보 필요",
+                                            name = "신규 사용자 추가 정보 필요",
+                                            summary = "신규 사용자 카카오 로그인 (추가 정보 입력 필요)",
                                             value = """
                 {
                     "timestamp": "2025-06-29T12:35:00.123",
                     "code": "COMMON200",
                     "message": "요청에 성공하였습니다.",
                     "result": {
-                        "user": null,
-                        "additionalInfoNeeded": {
+                        "user": {
+                            "name": "신규 사용자",
                             "email": "newuser@example.com",
-                            "name": "신규 회원"
+                            "role": "USER",
+                            "isNewUser": true
                         }
                     }
                 }
@@ -427,82 +427,64 @@ public class AuthController {
                     )
             ),
             @ApiResponse(
-                    responseCode = "404",
-                    description = "사용자 정보가 존재하지 않는 경우",
+                    responseCode = "400",
+                    description = "인가 코드 누락 또는 잘못된 요청",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = BaseResponse.class),
                             examples = @ExampleObject(
-                                    name = "사용자 미존재",
-                                    summary = "이메일은 존재하지만 사용자 정보가 없을 때 발생",
+                                    name = "인가 코드 누락",
+                                    summary = "인가 코드가 없는 경우",
                                     value = """
-            {
-                "timestamp": "2025-06-29T12:45:00.000",
-                "code": "USER-404-001",
-                "message": "사용자를 찾을 수 없습니다."
-            }
-            """
+                {
+                    "timestamp": "2025-06-29T12:45:00.000",
+                    "code": "AUTH-400-001",
+                    "message": "인가 코드가 필요합니다."
+                }
+                """
                             )
                     )
             ),
             @ApiResponse(
                     responseCode = "502",
-                    description = "카카오 토큰/사용자 정보 요청 실패 관련 에러들",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = BaseResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "카카오 토큰 요청 실패",
-                                            summary = "",
-                                            value = """
-            {
-                "timestamp": "2025-06-29T12:40:00.000",
-                "code": "KAKAO-502-001",
-                "message": "카카오 토큰 요청에 실패했습니다."
-            }
-            """),
-                                    @ExampleObject(
-                                            name = "카카오 사용자 정보 요청 실패",
-                                            summary = "",
-                                            value = """
-            {
-                "timestamp": "2025-06-29T12:40:01.000",
-                "code": "KAKAO-502-002",
-                "message": "카카오 사용자 정보 요청에 실패했습니다."
-            }
-            """)
-                            }
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "503",
-                    description = "카카오 서버와의 통신 불가능",
+                    description = "카카오 API 호출 실패",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = BaseResponse.class),
                             examples = @ExampleObject(
-                                    name = "카카오 서버와 통신 불가능",
-                                    summary = "",
+                                    name = "카카오 API 실패",
+                                    summary = "카카오 토큰 또는 사용자 정보 요청 실패",
                                     value = """
-            {
-                "timestamp": "2025-06-29T12:40:00.000",
-                "code": "KAKAO-503-001",
-                "message": "카카오 서버와의 통신이 불가능합니다."
-            }
-            """)
+                {
+                    "timestamp": "2025-06-29T12:45:00.000",
+                    "code": "KAKAO-502-001",
+                    "message": "카카오 토큰 요청에 실패했습니다."
+                }
+                """
+                            )
                     )
             )
     })
-    @CrossOrigin(origins = "*", allowedHeaders = "*")
-    @PostMapping("/oauth2/kakao/login")
-    public ResponseEntity<BaseResponse<AuthResponseDto>> loginWithKakao(
-            @Valid @RequestBody KakaoLoginRequestDto request,
+    @GetMapping("/oauth2/kakao/callback")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> handleKakaoCallback(
+            @RequestParam(value = "code", required = false) String code,
+            @RequestParam(value = "error", required = false) String error,
             HttpServletResponse response
     ) {
-        AuthService.AuthResult authResult = authService.processKakaoLogin(request);
+        // 에러 파라미터가 있으면 에러 처리
+        if (error != null) {
+            throw new RestApiException(UserErrorStatus.KAKAO_AUTH_DENIED);
+        }
         
-        // 토큰이 있으면 쿠키로 설정 (기존 회원)
+        // 인가 코드가 없으면 에러
+        if (code == null || code.isEmpty()) {
+            throw new RestApiException(UserErrorStatus.KAKAO_AUTH_CODE_MISSING);
+        }
+        
+        // 카카오 로그인 처리
+        AuthResultDto authResult = authService.handleKakaoCallback(code);
+        
+        // 기존 사용자인 경우 토큰을 쿠키에 설정
         if (authResult.tokenPair().accessToken() != null && authResult.tokenPair().refreshToken() != null) {
             setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
         }
@@ -664,7 +646,7 @@ public class AuthController {
             @Valid @RequestBody KakaoSignupRequestDto request,
             HttpServletResponse response
     ) {
-                        AuthService.AuthResult authResult = authService.completeSignupWithKakao(request);
+                        AuthResultDto authResult = authService.completeSignupWithKakao(request);
 
         // 토큰을 쿠키로 설정
         setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
@@ -755,7 +737,7 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        AuthService.AuthResult authResult = authService.refreshAccessToken(request);
+        AuthResultDto authResult = authService.refreshAccessToken(request);
 
         // 토큰을 쿠키로 설정
         setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
