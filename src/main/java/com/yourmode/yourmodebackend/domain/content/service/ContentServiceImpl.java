@@ -21,11 +21,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import com.yourmode.yourmodebackend.domain.content.status.ContentErrorStatus;
 import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
+import com.yourmode.yourmodebackend.domain.content.dto.request.s3.FileDeleteRequestDto;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +35,7 @@ public class ContentServiceImpl implements ContentService {
     private final ContentCategoryRepository contentCategoryRepository;
     private final BodyTypeRepository bodyTypeRepository;
     private final ContentRequestRepository contentRequestRepository;
+    private final S3Service s3Service;
     // TODO: ContentCategoryRepository 또는 EntityManager 주입 필요(임시 null 처리)
 
     @Override
@@ -299,5 +300,52 @@ public class ContentServiceImpl implements ContentService {
             }
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void deleteContent(Integer contentId, Integer editorId) {
+        Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new RestApiException(ContentErrorStatus.CONTENT_NOT_FOUND));
+        
+        // 권한 확인
+        if (!content.getEditor().getId().equals(editorId)) {
+            throw new RestApiException(ContentErrorStatus.FORBIDDEN_CONTENT_ACCESS);
+        }
+        
+        // S3에서 이미지 파일들 삭제
+        try {
+            // 메인 이미지 삭제
+            if (content.getMainImgUrl() != null && !content.getMainImgUrl().isEmpty()) {
+                FileDeleteRequestDto deleteRequest = FileDeleteRequestDto.builder()
+                        .userId(editorId)
+                        .fileUrl(content.getMainImgUrl())
+                        .build();
+                s3Service.deleteFile(deleteRequest);
+            }
+            
+            // 블록 이미지들 삭제
+            if (content.getContentBlocks() != null) {
+                for (ContentBlock block : content.getContentBlocks()) {
+                    if (block.getImages() != null) {
+                        for (ContentBlockImage image : block.getImages()) {
+                            if (image.getImageUrl() != null && !image.getImageUrl().isEmpty()) {
+                                FileDeleteRequestDto deleteRequest = FileDeleteRequestDto.builder()
+                                        .userId(editorId)
+                                        .fileUrl(image.getImageUrl())
+                                        .build();
+                                s3Service.deleteFile(deleteRequest);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // S3 삭제 실패해도 DB 삭제는 진행 (로그 기록 권장)
+            System.err.println("Failed to delete S3 files for content " + contentId + ": " + e.getMessage());
+        }
+        
+        // DB에서 컨텐츠 삭제 (Cascade로 관련 데이터도 함께 삭제됨)
+        contentRepository.delete(content);
     }
 } 

@@ -10,4 +10,5 @@ public interface ContentService {
     ContentDetailResponseDto updateContent(Integer contentId, ContentCreateRequestDto dto, Integer editorId);
     ContentDetailResponseDto getContentDetail(Integer contentId);
     List<ContentListResponseDto> getAllContents();
+    void deleteContent(Integer contentId, Integer editorId);
 } 

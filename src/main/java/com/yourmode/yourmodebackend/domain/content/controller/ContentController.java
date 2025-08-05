@@ -228,4 +228,36 @@ public class ContentController {
     public ResponseEntity<List<ContentListResponseDto>> getAllContents() {
         return ResponseEntity.ok(contentService.getAllContents());
     }
+
+    @DeleteMapping("/{contentId}")
+    @Operation(
+        summary = "컨텐츠 삭제",
+        description = "컨텐츠를 삭제합니다. 컨텐츠 소유자만 삭제할 수 있으며, 관련된 모든 이미지도 함께 삭제됩니다."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "컨텐츠 삭제 성공",
+            content = @Content(
+                mediaType = "text/plain",
+                schema = @Schema(example = "Content deleted successfully")
+            )
+        ),
+        @ApiResponse(responseCode = "401", description = "인증 실패"),
+        @ApiResponse(responseCode = "403", description = "권한 없음 (컨텐츠 소유자가 아님)"),
+        @ApiResponse(responseCode = "404", description = "컨텐츠를 찾을 수 없음"),
+        @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    public ResponseEntity<String> deleteContent(
+            @Parameter(
+                description = "삭제할 컨텐츠 ID",
+                example = "1",
+                required = true
+            )
+            @PathVariable Integer contentId,
+            @CurrentUser PrincipalDetails userDetails
+    ) {
+        contentService.deleteContent(contentId, userDetails.getUserId());
+        return ResponseEntity.ok("Content deleted successfully");
+    }
 } 
