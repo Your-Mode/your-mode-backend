@@ -10,7 +10,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonPropertyOrder({ "user" })
+@JsonPropertyOrder({ "accessToken", "user" })
 public class AuthResponseDto {
+    private String accessToken;
     private UserInfoDto user;
 }

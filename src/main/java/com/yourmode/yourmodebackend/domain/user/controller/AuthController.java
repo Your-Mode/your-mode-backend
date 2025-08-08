@@ -50,35 +50,19 @@ public class AuthController {
     private String cookieSameSite;
 
     /**
-     * 토큰을 쿠키로 설정하는 헬퍼 메서드
+     * 리프레시 토큰을 쿠키로 설정하는 헬퍼 메서드
      */
-    private void setTokenCookies(HttpServletResponse response, String accessToken, String refreshToken) {
-        // 액세스 토큰 쿠키 설정
-        Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(cookieSecure); // 환경에 따라 설정
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge((int) (accessTokenExpiration / 1000)); // 초 단위로 변환
-        
-        // SameSite 속성 설정 (Servlet 4.0+)
-        if (cookieSameSite != null && !cookieSameSite.isEmpty()) {
-            accessTokenCookie.setAttribute("SameSite", cookieSameSite);
-        }
-        
-        response.addCookie(accessTokenCookie);
-
-        // 리프레시 토큰 쿠키 설정
+    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
         Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
         refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(cookieSecure); // 환경에 따라 설정
+        refreshTokenCookie.setSecure(cookieSecure);
         refreshTokenCookie.setPath("/");
-        refreshTokenCookie.setMaxAge((int) (refreshTokenExpiration / 1000)); // 초 단위로 변환
-        
-        // SameSite 속성 설정 (Servlet 4.0+)
+        refreshTokenCookie.setMaxAge((int) (refreshTokenExpiration / 1000));
+
         if (cookieSameSite != null && !cookieSameSite.isEmpty()) {
             refreshTokenCookie.setAttribute("SameSite", cookieSameSite);
         }
-        
+
         response.addCookie(refreshTokenCookie);
     }
 
@@ -250,11 +234,14 @@ public class AuthController {
     ) {
         AuthResultDto authResult = authService.signUp(request);
 
-        // 토큰을 쿠키로 설정
-        setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
+        // 리프레시 토큰을 쿠키로 설정
+        setRefreshTokenCookie(response, authResult.tokenPair().refreshToken());
 
-        // 사용자 정보를 AuthResult에서 가져와서 응답 구성
-        AuthResponseDto authResponseDto = new AuthResponseDto(authResult.userInfo());
+        // 액세스 토큰은 응답 바디로 반환
+        AuthResponseDto authResponseDto = AuthResponseDto.builder()
+                .accessToken(authResult.tokenPair().accessToken())
+                .user(authResult.userInfo())
+                .build();
 
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
@@ -333,11 +320,14 @@ public class AuthController {
     ) {
         AuthResultDto authResult = authService.login(request);
 
-        // 토큰을 쿠키로 설정
-        setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
+        // 리프레시 토큰을 쿠키로 설정
+        setRefreshTokenCookie(response, authResult.tokenPair().refreshToken());
 
-        // 사용자 정보를 AuthResult에서 가져와서 응답 구성
-        AuthResponseDto authResponseDto = new AuthResponseDto(authResult.userInfo());
+        // 액세스 토큰은 응답 바디로 반환
+        AuthResponseDto authResponseDto = AuthResponseDto.builder()
+                .accessToken(authResult.tokenPair().accessToken())
+                .user(authResult.userInfo())
+                .build();
 
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
@@ -483,15 +473,18 @@ public class AuthController {
         
         // 카카오 로그인 처리
         AuthResultDto authResult = authService.handleKakaoCallback(code);
-        
-        // 기존 사용자인 경우 토큰을 쿠키에 설정
-        if (authResult.tokenPair().accessToken() != null && authResult.tokenPair().refreshToken() != null) {
-            setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
+
+        // 기존 사용자인 경우 리프레시 토큰만 쿠키에 설정
+        if (authResult.tokenPair().refreshToken() != null) {
+            setRefreshTokenCookie(response, authResult.tokenPair().refreshToken());
         }
-        
-        // AuthResponseDto로 변환하여 응답
-        AuthResponseDto authResponseDto = new AuthResponseDto(authResult.userInfo());
-        
+
+        // 액세스 토큰은 응답 바디로 반환 (신규 사용자는 null 가능)
+        AuthResponseDto authResponseDto = AuthResponseDto.builder()
+                .accessToken(authResult.tokenPair().accessToken())
+                .user(authResult.userInfo())
+                .build();
+
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
@@ -648,11 +641,14 @@ public class AuthController {
     ) {
                         AuthResultDto authResult = authService.completeSignupWithKakao(request);
 
-        // 토큰을 쿠키로 설정
-        setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
+        // 리프레시 토큰을 쿠키로 설정
+        setRefreshTokenCookie(response, authResult.tokenPair().refreshToken());
 
-        // 사용자 정보를 AuthResult에서 가져와서 응답 구성
-        AuthResponseDto authResponseDto = new AuthResponseDto(authResult.userInfo());
+        // 액세스 토큰은 응답 바디로 반환
+        AuthResponseDto authResponseDto = AuthResponseDto.builder()
+                .accessToken(authResult.tokenPair().accessToken())
+                .user(authResult.userInfo())
+                .build();
 
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
@@ -739,11 +735,14 @@ public class AuthController {
     ) {
         AuthResultDto authResult = authService.refreshAccessToken(request);
 
-        // 토큰을 쿠키로 설정
-        setTokenCookies(response, authResult.tokenPair().accessToken(), authResult.tokenPair().refreshToken());
+        // 리프레시 토큰을 쿠키로 설정
+        setRefreshTokenCookie(response, authResult.tokenPair().refreshToken());
         
-        // 사용자 정보를 AuthResult에서 가져와서 응답 구성
-        AuthResponseDto authResponseDto = new AuthResponseDto(authResult.userInfo());
+        // 액세스 토큰은 응답 바디로 반환
+        AuthResponseDto authResponseDto = AuthResponseDto.builder()
+                .accessToken(authResult.tokenPair().accessToken())
+                .user(authResult.userInfo())
+                .build();
         
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
@@ -824,20 +823,7 @@ public class AuthController {
     ) {
         UserIdResponseDto userIdResponseDto = authService.logout(principal);
         
-        // 쿠키에서 토큰 삭제
-        Cookie accessTokenCookie = new Cookie("accessToken", null);
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(cookieSecure);
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge(0);
-        
-        // SameSite 속성 설정
-        if (cookieSameSite != null && !cookieSameSite.isEmpty()) {
-            accessTokenCookie.setAttribute("SameSite", cookieSameSite);
-        }
-        
-        response.addCookie(accessTokenCookie);
-
+        // 쿠키에서 리프레시 토큰 삭제
         Cookie refreshTokenCookie = new Cookie("refreshToken", null);
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setSecure(cookieSecure);
