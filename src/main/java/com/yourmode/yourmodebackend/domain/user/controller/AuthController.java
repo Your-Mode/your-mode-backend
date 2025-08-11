@@ -455,7 +455,7 @@ public class AuthController {
                     )
             )
     })
-    @GetMapping("/oauth2/kakao/callback")
+    @RequestMapping("/auth/oauth2/kakao/callback")
     public ResponseEntity<BaseResponse<AuthResponseDto>> handleKakaoCallback(
             @RequestParam(value = "code", required = false) String code,
             @RequestParam(value = "error", required = false) String error,
