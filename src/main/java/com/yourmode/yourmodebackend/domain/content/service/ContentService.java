@@ -11,4 +11,4 @@ public interface ContentService {
     ContentDetailResponseDto getContentDetail(Integer contentId);
     List<ContentListResponseDto> getAllContents();
     void deleteContent(Integer contentId, Integer editorId);
-} 
+}
