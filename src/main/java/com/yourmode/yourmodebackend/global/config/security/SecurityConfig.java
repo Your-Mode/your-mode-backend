@@ -46,7 +46,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/docs/**",
-                                "/api/auth/**",     // 로그인/회원가입/비밀번호 변경
+                                "/api/auth/**",
+                                "/auth/oauth2/kakao/callback", // 로그인/회원가입/비밀번호 변경
                                 "/api/content/s3/**" // S3 API - JWT 토큰 없이 접근 가능
                         ).permitAll()
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
