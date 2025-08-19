@@ -27,7 +27,7 @@ import java.net.URLEncoder;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "OAuth: 카카오 인증", description = "카카오 OAuth 인증 관련 API")
+@Tag(name = "Auth(OAuth): 카카오 인증", description = "카카오 OAuth 인증 관련 API")
 public class OAuthController {
 
     private final OAuthService oauthService;
