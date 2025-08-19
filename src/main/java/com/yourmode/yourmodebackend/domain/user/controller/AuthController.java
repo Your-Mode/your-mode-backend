@@ -1,13 +1,12 @@
 package com.yourmode.yourmodebackend.domain.user.controller;
 
-import com.yourmode.yourmodebackend.domain.user.dto.request.*;
+import com.yourmode.yourmodebackend.domain.user.dto.request.LocalLoginRequestDto;
+import com.yourmode.yourmodebackend.domain.user.dto.request.LocalSignupRequestDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResultDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResponseDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.UserIdResponseDto;
 import com.yourmode.yourmodebackend.domain.user.service.AuthService;
-import com.yourmode.yourmodebackend.domain.user.status.UserErrorStatus;
 import com.yourmode.yourmodebackend.global.common.base.BaseResponse;
-import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
 import com.yourmode.yourmodebackend.global.config.security.auth.CurrentUser;
 import com.yourmode.yourmodebackend.global.config.security.auth.PrincipalDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,13 +21,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
-@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -36,9 +32,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-
-    @Value("${jwt.access-token-expiration}")
-    private long accessTokenExpiration;
 
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
@@ -332,200 +325,7 @@ public class AuthController {
         return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
     }
 
-    @Value("${kakao.client-id}")
-    private String clientId;
-    @Value("${kakao.redirect-uri}")
-    private String redirectUri;
 
-    /**
-     * 카카오 로그인 인증 요청 엔드포인트
-     * <p>
-     * 1. 클라이언트가 GET /authorize 요청을 보냅니다.
-     * 2. 이 메서드는 카카오 인증 URL을 반환합니다.
-     * 3. 클라이언트는 이 URL로 리다이렉트하여 카카오 인증을 진행합니다.
-     * 4. 사용자가 로그인 및 동의를 완료하면, Kakao가 Authorization Code를 포함해 리다이렉션합니다.
-     * 5. 서버는 code를 받아 access token을 요청하고 로그인 처리합니다.
-     *
-     * @return 카카오 인증 URL
-     */
-    @Operation(
-            summary = "카카오 로그인 인증 요청",
-            description = "카카오 인증 URL을 반환합니다. 프론트엔드에서 이 URL로 리다이렉트하여 카카오 로그인을 진행합니다."
-    )
-    @CrossOrigin(origins = "*", allowedHeaders = "*")
-    @GetMapping("/oauth2/kakao/authorize")
-    public ResponseEntity<BaseResponse<String>> getKakaoAuthUrl() {
-        String authUrl = "https://kauth.kakao.com/oauth/authorize?" +
-                "client_id=" + clientId +
-                "&redirect_uri=" + redirectUri +
-                "&response_type=code";
-        return ResponseEntity.ok(BaseResponse.onSuccess(authUrl));
-    }
-
-    /**
-     * 카카오 회원가입 완료 처리.
-     * <p>
-     * 클라이언트로부터 추가 프로필 정보가 포함된 가입 요청을 받아
-     * 신규 회원으로 사용자 등록 및 인증 토큰을 발급.
-     *
-     * @param request KakaoSignupRequestDto - 카카오 회원가입 요청 DTO (추가 프로필 정보 포함)
-     * @param response 쿠키 설정을 위한 HttpServletResponse
-     * @return 회원가입 완료 후 유저 정보가 포함된 응답 반환
-     *
-     */
-    @Operation(summary = "카카오 회원가입 완료 처리", description = "추가 프로필 정보가 포함된 가입 요청을 받아 신규 회원으로 사용자 등록 및 인증 토큰을 쿠키로 설정합니다.")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "회원가입 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = BaseResponse.class),
-                            examples = @ExampleObject(
-                                    name = "회원가입 성공 예시",
-                                    summary = "회원가입 후 유저 정보 반환 (토큰은 쿠키로 설정됨)",
-                                    value = """
-                {
-                    "timestamp": "2025-06-29T12:34:56.789",
-                    "code": "COMMON200",
-                    "message": "요청에 성공하였습니다.",
-                    "result": {
-                        "user": {
-                            "name": "홍길동",
-                            "role": "USER"
-                        },
-                        "additionalInfoNeeded": null
-                    }
-                }
-                """
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "잘못된 요청 데이터 (바디타입 등)",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = BaseResponse.class),
-                            examples = @ExampleObject(
-                                    name = "존재하지 않는 바디타입",
-                                    summary = "존재하지 않는 바디타입 ID로 회원가입 시도",
-                                    value = """
-                {
-                    "timestamp": "2025-06-29T12:45:00.789",
-                    "code": "AUTH-400-003",
-                    "message": "존재하지 않는 체형입니다. 체형을 다시 선택해주세요."
-                }
-                """
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "중복 정보(이메일 또는 전화번호)로 인한 회원가입 실패",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = BaseResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "이메일 중복 오류",
-                                            summary = "이미 가입된 이메일로 회원가입 시도",
-                                            value = """
-                {
-                    "timestamp": "2025-06-29T12:35:01.123",
-                    "code": "AUTH-409-001",
-                    "message": "이미 사용 중인 이메일입니다."
-                }
-                """
-                                    ),
-                                    @ExampleObject(
-                                            name = "전화번호 중복 오류",
-                                            summary = "이미 사용 중인 전화번호로 회원가입 시도",
-                                            value = """
-                {
-                    "timestamp": "2025-06-29T12:36:22.456",
-                    "code": "AUTH-409-002",
-                    "message": "이미 사용 중인 전화번호입니다."
-                }
-                """
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "회원가입 도중 DB 저장 중 오류 발생",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = BaseResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "DB Insert 오류 - User",
-                                            summary = "User 테이블 저장 실패 시",
-                                            value = """
-                    {
-                        "timestamp": "2025-06-29T12:35:02.456",
-                        "code": "AUTH-500-001",
-                        "message": "사용자 정보를 DB에 저장하는 중 오류가 발생했습니다."
-                    }
-                    """
-                                    ),
-                                    @ExampleObject(
-                                            name = "DB Insert 오류 - Credential",
-                                            summary = "UserCredential 저장 실패 시",
-                                            value = """
-                    {
-                        "timestamp": "2025-06-29T12:35:03.789",
-                        "code": "AUTH-500-002",
-                        "message": "사용자 인증정보 저장 중 오류가 발생했습니다."
-                    }
-                    """
-                                    ),
-                                    @ExampleObject(
-                                            name = "DB Insert 오류 - Profile",
-                                            summary = "UserProfile 저장 실패 시",
-                                            value = """
-                    {
-                        "timestamp": "2025-06-29T12:35:04.321",
-                        "code": "AUTH-500-003",
-                        "message": "사용자 프로필 저장 중 오류가 발생했습니다."
-                    }
-                    """
-                                    ),
-                                    @ExampleObject(
-                                            name = "DB Insert 오류 - Token",
-                                            summary = "Refresh Token 저장 실패 시",
-                                            value = """
-                    {
-                        "timestamp": "2025-06-29T12:35:05.654",
-                        "code": "AUTH-500-004",
-                        "message": "사용자 토큰 저장 중 오류가 발생했습니다."
-                    }
-                    """
-                                    )
-                            }
-                    )
-            )
-    })
-    @CrossOrigin(origins = "*", allowedHeaders = "*")
-    @PostMapping("/oauth2/kakao/signup/complete")
-    public ResponseEntity<BaseResponse<AuthResponseDto>> completeSignupWithKakao(
-            @Valid @RequestBody KakaoSignupRequestDto request,
-            HttpServletResponse response
-    ) {
-                        AuthResultDto authResult = authService.completeSignupWithKakao(request);
-
-        // 리프레시 토큰을 쿠키로 설정
-        setRefreshTokenCookie(response, authResult.tokenPair().refreshToken());
-
-        // 액세스 토큰은 응답 바디로 반환
-        AuthResponseDto authResponseDto = AuthResponseDto.builder()
-                .accessToken(authResult.tokenPair().accessToken())
-                .user(authResult.userInfo())
-                .build();
-
-        return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
-    }
 
     /**
      * 리프레시 토큰으로 액세스 토큰 재발급 처리

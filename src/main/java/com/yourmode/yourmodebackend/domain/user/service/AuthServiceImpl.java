@@ -1,67 +1,40 @@
 package com.yourmode.yourmodebackend.domain.user.service;
 
-import com.yourmode.yourmodebackend.domain.user.entity.*;
-import com.yourmode.yourmodebackend.domain.user.dto.request.*;
+import com.yourmode.yourmodebackend.domain.user.entity.User;
+import com.yourmode.yourmodebackend.domain.user.entity.UserToken;
+import com.yourmode.yourmodebackend.domain.user.dto.request.LocalLoginRequestDto;
+import com.yourmode.yourmodebackend.domain.user.dto.request.LocalSignupRequestDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResultDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.TokenPairDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.UserIdResponseDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.UserInfoDto;
 import com.yourmode.yourmodebackend.domain.user.enums.OAuthProvider;
-import com.yourmode.yourmodebackend.domain.user.enums.UserRole;
-
-import com.yourmode.yourmodebackend.domain.user.repository.*;
+import com.yourmode.yourmodebackend.domain.user.repository.UserRepository;
+import com.yourmode.yourmodebackend.domain.user.repository.UserTokenRepository;
 import com.yourmode.yourmodebackend.domain.user.status.UserErrorStatus;
 import com.yourmode.yourmodebackend.global.config.security.jwt.JwtProvider;
 import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
 import com.yourmode.yourmodebackend.global.config.security.auth.PrincipalDetails;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.dao.DataAccessException;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.*;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
-
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
-import java.util.Map;
 
-@Slf4j
 @RequiredArgsConstructor
 @Service
 public class AuthServiceImpl implements AuthService{
 
     private final UserRepository userRepository;
-    private final UserProfileRepository userProfileRepository;
-    private final UserCredentialRepository userCredentialRepository;
     private final UserTokenRepository userTokenRepository;
-    private final BodyTypeRepository bodyTypeRepository;
-
-    private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final AuthenticationManager authenticationManager;
-    private final RestTemplate restTemplate;
-
-    @Value("${kakao.client-id}")
-    private String clientId;
-
-    @Value("${kakao.redirect-uri}")
-    private String redirectUri;
+    private final UserManagementService userManagementService;
 
     /**
      * 로컬 회원가입 처리
@@ -83,192 +56,41 @@ public class AuthServiceImpl implements AuthService{
     @Transactional
     public AuthResultDto signUp(LocalSignupRequestDto request) {
         // 이메일 중복 체크 후 중복되면 예외 발생
-        validateDuplicateEmail(request.getEmail());
+        userManagementService.validateDuplicateEmail(request.getEmail());
 
         // User 생성 및 저장, DB에서 자동 생성된 PK(userId) 필드 값이 세팅됨
-        User user = createAndSaveUser(request);
+        User user = userManagementService.createAndSaveUser(request);
 
         // UserCredential 저장: 비밀번호 해시값 + OAuthProvider 정보
-        saveUserCredential(user, request.getPassword(), OAuthProvider.LOCAL, null);
+        userManagementService.saveUserCredential(user, request.getPassword(), OAuthProvider.LOCAL, null);
 
         // UserProfile 저장: 키, 몸무게, 성별, 체형 등 프로필 정보
-        saveUserProfile(user, request);
+                    userManagementService.saveUserProfile(user, request);
 
-        try {
-            UsernamePasswordAuthenticationToken authenticationToken =
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
-            Authentication authentication = authenticationManager.authenticate(authenticationToken);
+            try {
+                UsernamePasswordAuthenticationToken authenticationToken =
+                        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
+                Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
-            PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
+                PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
 
-            Integer userId = principalDetails.getUserId();
-            String email = principalDetails.getEmail();
+                Integer userId = principalDetails.getUserId();
+                String email = principalDetails.getEmail();
 
-            // JWT 액세스 토큰 및 리프레시 토큰 생성
-            JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId, email);
-            JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, email);
+                // JWT 액세스 토큰 및 리프레시 토큰 생성
+                JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId, email);
+                JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, email);
 
-            saveUserToken(user, refresh.token(), refresh.expiry());
+                                userManagementService.saveUserToken(user, refresh.token(), refresh.expiry());
 
-            // 사용자 정보 생성
-            UserInfoDto userInfo = buildUserInfoDto(user);
+                // 사용자 정보 생성
+                UserInfoDto userInfo = userManagementService.buildUserInfoDto(user);
 
             // 토큰 쌍과 사용자 정보 반환
             return new AuthResultDto(new TokenPairDto(access.token(), refresh.token()), userInfo);
 
         } catch (AuthenticationException ex) {
             throw new RestApiException(UserErrorStatus.AUTHENTICATION_FAILED);
-        }
-    }
-
-    /**
-     * 이메일 중복 검증
-     *
-     * @param email 검사할 이메일
-     * @throws RestApiException 중복된 이메일이 존재 시
-     */
-    private void validateDuplicateEmail(String email) {
-        if (userRepository.existsByEmail(email)) {
-            throw new RestApiException(UserErrorStatus.DUPLICATE_EMAIL);
-        }
-    }
-
-    /**
-     * User 엔티티로부터 UserInfoDto 생성
-     *
-     * @param user User 엔티티
-     * @return UserInfoDto
-     */
-    private UserInfoDto buildUserInfoDto(User user) {
-        return UserInfoDto.builder()
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .isNewUser(false)  // 기존 회원으로 간주
-                .build();
-    }
-
-    /**
-     * User 엔티티 생성 및 DB 저장
-     * 자동 생성된 PK(userId)가 객체에 세팅됨
-     *
-     * @param request 회원가입 요청 DTO
-     * @return 저장된 User 엔티티 (userId 포함)
-     * @throws RestApiException DB 저장 중 오류 발생 시
-     */
-    private User createAndSaveUser(CommonSignupRequest request) {
-        User user = new User();
-        user.setEmail(request.getEmail());
-        user.setName(request.getName());
-        user.setPhoneNumber(request.getPhoneNumber());
-        user.setRole(UserRole.USER);
-        user.setTermsAgreed(request.getIsTermsAgreed());
-        user.setPrivacyPolicyAgreed(request.getIsPrivacyPolicyAgreed());
-        user.setMarketingAgreed(request.getIsMarketingAgreed());
-        user.setCreatedAt(LocalDateTime.now());
-
-        try {
-            userRepository.save(user); // save 시 자동으로 userId 세팅됨
-        } catch (DataIntegrityViolationException e) {
-            String message = e.getRootCause() != null ? e.getRootCause().getMessage() : "";
-            if (message.contains("phone_number")) {
-                throw new RestApiException(UserErrorStatus.DUPLICATE_PHONE_NUMBER);
-            } else if (message.contains("email")) {
-                throw new RestApiException(UserErrorStatus.DUPLICATE_EMAIL);
-            } else {
-                throw new RestApiException(UserErrorStatus.DB_INSERT_FAILED);
-            }
-        }
-
-        return user;
-
-    }
-
-    /**
-     * UserCredential 저장
-     * 주어진 User 엔티티에 대해 인증 정보를 생성하고 저장합니다.
-     * 비밀번호는 암호화하여 저장되며, OAuthProvider 및 OAuth ID 설정이 가능합니다.
-     *
-     * @param user        대상 User 엔티티 (이미 저장된 상태여야 함)
-     * @param rawPassword 평문 비밀번호 (암호화되어 저장됨), OAuth 로그인 사용자는 null
-     * @param provider    로그인 제공자 정보 (LOCAL, KAKAO 등)
-     * @param oauthId     현재는 OAuth 와 Local 모두 NULL, 추후 고려
-     * @throws RestApiException DB 저장 중 오류 발생 시
-     */
-    private void saveUserCredential(User user, String rawPassword, OAuthProvider provider, String oauthId) {
-        UserCredential credential = new UserCredential();
-        credential.setUser(user); // userId 대신 User 객체 전체 설정
-
-        if (rawPassword != null) {
-            credential.setPasswordHash(passwordEncoder.encode(rawPassword));
-        } else {
-            credential.setPasswordHash(null);
-        }
-
-        credential.setOauthProvider(provider);
-        credential.setOauthId(oauthId);
-
-        user.setCredential(credential);
-
-        try {
-            userCredentialRepository.save(credential);
-        } catch (DataAccessException e) {
-            throw new RestApiException(UserErrorStatus.DB_CREDENTIAL_INSERT_FAILED);
-        }
-    }
-
-
-    /**
-     * UserProfile 저장
-     * 키, 몸무게, 성별, 체형 ID 등 프로필 정보 저장
-     *
-     * @param user    저장 대상 User 객체 (DB에 이미 저장된 상태)
-     * @param request 회원가입 요청 정보 (CommonSignupRequest 구현체)
-     * @throws RestApiException DB 저장 중 오류 발생 시
-     */
-    private void saveUserProfile(User user, CommonSignupRequest request) {
-        UserProfile profile = new UserProfile();
-        profile.setUser(user); // 연관 관계 설정
-        profile.setGender(request.getGender());
-        profile.setHeight(request.getHeight());
-        profile.setWeight(request.getWeight());
-
-        BodyType bodyType = bodyTypeRepository.findById(request.getBodyTypeId())
-                .orElseThrow(() -> new RestApiException(UserErrorStatus.BODY_TYPE_NOT_FOUND));
-
-        profile.setBodyType(bodyType);
-
-        user.setProfile(profile);
-
-        try {
-            userProfileRepository.save(profile);
-        } catch (DataAccessException e) {
-            throw new RestApiException(UserErrorStatus.DB_PROFILE_INSERT_FAILED);
-        }
-    }
-
-    /**
-     * Refresh Token 저장 (Upsert 방식)
-     * 기존 토큰이 있으면 update, 없으면 insert
-     * @param user 저장 대상 User 객체 (DB에 이미 저장된 상태)
-     * @param refreshToken 발급된 리프레시 토큰 문자열
-     * @param expiredAt 토큰 만료일시
-     * @throws RestApiException DB 저장 중 오류 발생 시
-     */
-    private void saveUserToken(User user, String refreshToken, LocalDateTime expiredAt) {
-        // 기존 토큰이 있으면 update, 없으면 insert
-        UserToken userToken = userTokenRepository.findByUserId(user.getId())
-            .orElse(null);
-        if (userToken == null) {
-            userToken = new UserToken();
-            userToken.setUser(user);
-        }
-        userToken.setRefreshToken(refreshToken);
-        userToken.setExpiredAt(expiredAt);
-        try {
-            userTokenRepository.save(userToken);
-        } catch (DataAccessException e) {
-            throw new RestApiException(UserErrorStatus.DB_TOKEN_INSERT_FAILED);
         }
     }
 
@@ -306,10 +128,10 @@ public class AuthServiceImpl implements AuthService{
             // 발급된 리프레시 토큰 DB 저장
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
-            saveUserToken(user, refresh.token(), refresh.expiry());
+            userManagementService.saveUserToken(user, refresh.token(), refresh.expiry());
 
             // 사용자 정보 생성
-            UserInfoDto userInfo = buildUserInfoDto(user);
+            UserInfoDto userInfo = userManagementService.buildUserInfoDto(user);
 
             // 토큰 쌍과 사용자 정보 반환
             return new AuthResultDto(new TokenPairDto(access.token(), refresh.token()), userInfo);
@@ -319,185 +141,6 @@ public class AuthServiceImpl implements AuthService{
         } catch (AuthenticationException e) {
             throw new RestApiException(UserErrorStatus.AUTHENTICATION_FAILED);
         }
-    }
-
-    /**
-     * 인가 코드를 이용해 카카오에서 액세스 토큰과 리프레시 토큰을 요청하는 메서드
-     *
-     * @param authorizationCode 카카오에서 받은 인가 코드
-     * @return 토큰 정보가 담긴 Map (access_token, refresh_token 등)
-     * @throws RestApiException 카카오 API 호출 실패  시 발생
-     */
-    public Map<String, Object> requestTokenWithKakao(String authorizationCode) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-            params.add("grant_type", "authorization_code");
-            params.add("client_id", clientId);
-            params.add("redirect_uri", redirectUri);
-            params.add("code", authorizationCode);
-
-            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
-
-            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                    "https://kauth.kakao.com/oauth/token",
-                    HttpMethod.POST,
-                    request,
-                    new ParameterizedTypeReference<Map<String, Object>>() {}
-            );
-
-            return response.getBody();
-
-        } catch (ResourceAccessException e) {
-            // 카카오 서버와 통신 불가
-            throw new RestApiException(UserErrorStatus.KAKAO_API_UNAVAILABLE);
-        } catch (Exception e) {
-            throw new RestApiException(UserErrorStatus.KAKAO_TOKEN_REQUEST_FAILED);
-        }
-    }
-
-
-    /**
-     * 액세스 토큰을 이용해 카카오 사용자 정보를 요청하는 메서드
-     *
-     * @param accessToken 카카오에서 발급받은 액세스 토큰
-     * @return 사용자 정보가 담긴 Map (이메일, 프로필 등)
-     */
-    public Map<String, Object> requestUserInfoWithKakao(String accessToken) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(accessToken);
-
-            HttpEntity<?> request = new HttpEntity<>(headers);
-
-            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                    "https://kapi.kakao.com/v2/user/me",
-                    HttpMethod.GET,
-                    request,
-                    new ParameterizedTypeReference<Map<String, Object>>() {}
-            );
-            return response.getBody();
-        } catch (Exception e) {
-            throw new RestApiException(UserErrorStatus.KAKAO_USERINFO_REQUEST_FAILED);
-        }
-    }
-
-
-
-    /**
-     * 카카오 회원가입 완료 처리 메서드
-     * 1) 이메일 중복 여부 확인
-     * 2) User 엔티티 생성 및 저장
-     * 3) UserCredential 저장 (비밀번호는 null, Kakao OAuth 정보 포함)
-     * 4) UserProfile 저장 (키, 몸무게, 성별, 체형 등 프로필 정보)
-     * 5) JWT 토큰 생성 및 저장
-     * 6) 로그인 완료 응답 반환
-     *
-     * @param request 카카오 회원가입 요청 DTO (추가 정보 포함)
-     * @return JWT 토큰과 유저 정보가 포함된 응답 DTO
-     */
-    @Transactional
-    public AuthResultDto completeSignupWithKakao(KakaoSignupRequestDto request) {
-        // 이메일 중복 체크 및 회원 생성, 저장
-        validateDuplicateEmail(request.getEmail());
-        User user = createAndSaveUser(request);
-        saveUserCredential(user, null, OAuthProvider.KAKAO, null);
-        saveUserProfile(user, request);
-
-        // PrincipalDetails 생성 (password는 null or "")
-        PrincipalDetails principalDetails = new PrincipalDetails(user, "");
-
-        // 인증 토큰 생성 (인증매니저가 처리할 authentication)
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(principalDetails, null, principalDetails.getAuthorities());
-
-        // 인증 성공 시 SecurityContext에 저장 (로그인 상태 유지)
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // JWT 토큰 생성 및 저장
-        Integer userId = user.getId();
-        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId, user.getEmail());
-        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, user.getEmail());
-        saveUserToken(user, refresh.token(), refresh.expiry());
-
-        // 사용자 정보 생성
-        UserInfoDto userInfo = buildUserInfoDto(user);
-
-        // 토큰 쌍과 사용자 정보 반환
-        return new AuthResultDto(new TokenPairDto(access.token(), refresh.token()), userInfo);
-    }
-
-    /**
-     * 카카오 콜백 처리를 위한 메서드
-     * 신규 사용자인 경우 토큰을 null로 설정하고, 기존 사용자인 경우 토큰을 설정합니다.
-     *
-     * @param code 카카오 인가 코드
-     * @return JWT 토큰과 유저 정보가 포함된 응답 DTO (신규 사용자는 토큰이 null)
-     * @throws RestApiException 카카오 API 호출 실패 시 예외 발생
-     */
-    @Transactional
-    public AuthResultDto handleKakaoCallback(String code) {
-        // 카카오 토큰 발급
-        Map<String, Object> tokenInfo = requestTokenWithKakao(code);
-        String accessToken = (String) tokenInfo.get("access_token");
-
-        // 카카오 사용자 정보 조회
-        Map<String, Object> kakaoUserInfo = requestUserInfoWithKakao(accessToken);
-        Object kakaoAccountObj = kakaoUserInfo.get("kakao_account");
-        if (!(kakaoAccountObj instanceof Map)) {
-            throw new RestApiException(UserErrorStatus.KAKAO_USERINFO_REQUEST_FAILED);
-        }
-        @SuppressWarnings("unchecked")
-        Map<String, Object> kakaoAccount = (Map<String, Object>) kakaoAccountObj;
-        String email = (String) kakaoAccount.get("email");
-        Object profileObj = kakaoAccount.get("profile");
-        if (!(profileObj instanceof Map)) {
-            throw new RestApiException(UserErrorStatus.KAKAO_USERINFO_REQUEST_FAILED);
-        }
-        @SuppressWarnings("unchecked")
-        Map<String, Object> profile = (Map<String, Object>) profileObj;
-        String nickname = (String) profile.get("nickname");
-
-        // 회원 존재 여부 확인
-        if (!userRepository.existsByEmail(email)) {
-            // 신규 회원: null 토큰과 기본 사용자 정보 반환 (추가 정보 입력 필요)
-            UserInfoDto userInfo = UserInfoDto.builder()
-                    .name(nickname)
-                    .email(email)
-                    .role(UserRole.USER)
-                    .isNewUser(true)
-                    .build();
-
-            return new AuthResultDto(new TokenPairDto(null, null), userInfo);
-        }
-
-        User user = userRepository.findByEmailWithProfile(email)
-                .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
-
-        Integer userId = user.getId();
-
-        PrincipalDetails principalDetails = new PrincipalDetails(user, "");
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(principalDetails, null, principalDetails.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // JWT 토큰 발급
-        JwtProvider.JwtWithExpiry access = jwtProvider.generateAccessToken(userId, email);
-        JwtProvider.JwtWithExpiry refresh = jwtProvider.generateRefreshToken(userId, email);
-
-        // 발급된 리프레시 토큰 DB 저장
-        saveUserToken(user, refresh.token(), refresh.expiry());
-
-        UserInfoDto userInfo = UserInfoDto.builder()
-                .name(user.getName())
-                .email(email)  // 카카오에서 받은 이메일 사용
-                .role(user.getRole())
-                .isNewUser(false)
-                .build();
-
-        return new AuthResultDto(new TokenPairDto(access.token(), refresh.token()), userInfo);
     }
 
     /**
@@ -551,12 +194,11 @@ public class AuthServiceImpl implements AuthService{
         // 사용자 정보 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
-        UserInfoDto userInfo = buildUserInfoDto(user);
+        UserInfoDto userInfo = userManagementService.buildUserInfoDto(user);
 
         // 토큰 쌍과 사용자 정보 반환
         return new AuthResultDto(new TokenPairDto(newAccess.token(), newRefresh.token()), userInfo);
     }
-
 
     /**
      * 로그아웃 처리 메서드.
