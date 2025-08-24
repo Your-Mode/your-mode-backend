@@ -335,72 +335,115 @@ public class AuthController {
      * @return 새로 발급된 유저 정보가 포함된 응답
      *
      */
-    @Operation(summary = "액세스 토큰 재발급", description = "쿠키의 리프레시 토큰으로 액세스 토큰 재발급 처리합니다.")
+    @Operation(
+            summary = "액세스 토큰 재발급",
+            description = "쿠키의 리프레시 토큰으로 액세스 토큰을 재발급합니다. 새로운 리프레시 토큰은 쿠키로, 액세스 토큰은 응답 바디로 반환됩니다."
+    )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
                     description = "토큰 재발급 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = BaseResponse.class),
-                            examples = @ExampleObject(
-                                    name = "토큰 재발급 성공 예시",
-                                    summary = "새로운 토큰이 쿠키로 설정되고 유저 정보 반환",
-                                    value = """
-                {
-                    "timestamp": "2025-06-29T12:34:56.789",
-                    "code": "COMMON200",
-                    "message": "요청에 성공하였습니다.",
-                    "result": {
-                        "user": {
-                            "name": "홍길동",
-                            "role": "USER"
-                        },
-                        "additionalInfoNeeded": null
+                            schema = @Schema(implementation = AuthResponseDto.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "토큰 재발급 성공",
+                                            summary = "새로운 액세스 토큰과 사용자 정보 반환",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:30:00.000",
+                        "code": "200",
+                        "message": "요청이 성공적으로 처리되었습니다.",
+                        "data": {
+                            "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                            "user": {
+                                "id": 1,
+                                "email": "user@example.com",
+                                "nickname": "사용자",
+                                "isNewUser": false
+                            }
+                        }
                     }
-                }
-                """
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "사용자 정보가 존재하지 않는 경우",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = BaseResponse.class),
-                            examples = @ExampleObject(
-                                    name = "사용자 미존재",
-                                    summary = "이메일은 존재하지만 사용자 정보가 없을 때 발생",
-                                    value = """
-            {
-                "timestamp": "2025-06-29T12:45:00.000",
-                "code": "AUTH-404-001",
-                "message": "해당 이메일의 사용자를 찾을 수 없습니다."
-            }
-            """
-                            )
+                    """
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "토큰 정보가 유효하지 않은 경우",
+                    description = "인증 실패",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = BaseResponse.class),
-                            examples = @ExampleObject(
-                                    name = "유효하지 않은 토큰",
-                                    summary = "토큰 검증 후 유효하지 않을 때 발생",
-                                    value = """
-            {
-                "timestamp": "2025-06-29T12:45:00.000",
-                "code": "AUTH-401-005",
-                "message": "유효하지 않은 토큰입니다."
-            }
-            """
-                            )
+                            examples = {
+                                    @ExampleObject(
+                                            name = "유효하지 않은 리프레시 토큰",
+                                            summary = "쿠키의 리프레시 토큰이 유효하지 않음",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:30:00.000",
+                        "code": "AUTH-401-001",
+                        "message": "유효하지 않은 리프레시 토큰입니다."
+                    }
+                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "만료된 리프레시 토큰",
+                                            summary = "리프레시 토큰이 만료됨",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:30:00.000",
+                        "code": "AUTH-401-002",
+                        "message": "만료된 리프레시 토큰입니다."
+                    }
+                    """
+                                    )
+                            }
                     )
             ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사용자 미존재",
+                                            summary = "리프레시 토큰에 해당하는 사용자가 존재하지 않음",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:30:00.000",
+                        "code": "AUTH-404-001",
+                        "message": "해당 사용자를 찾을 수 없습니다."
+                    }
+                    """
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 내부 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "서버 오류",
+                                            summary = "토큰 재발급 처리 중 서버 오류 발생",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:30:00.000",
+                        "code": "AUTH-500-001",
+                        "message": "토큰 재발급 처리 중 오류가 발생했습니다."
+                    }
+                    """
+                                    )
+                            }
+                    )
+            )
     })
     @PostMapping("/refresh-token")
     public ResponseEntity<BaseResponse<AuthResponseDto>> refreshAccessToken(
