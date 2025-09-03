@@ -42,6 +42,24 @@ public class ContentQueryServiceImpl implements ContentQueryService {
         return toDetailDto(content);
     }
 
+    @Override
+    public Page<ContentListResponseDto> getMyContents(Integer userId, List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
+        Page<Content> page = contentRepository.findByUserIdAndCategoryIdsAndBodyTypeIds(userId, categoryIds, bodyTypeIds, pageable);
+        return page.map(this::toListDto);
+    }
+
+    @Override
+    public Page<ContentListResponseDto> getEditorContents(List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
+        Page<Content> page = contentRepository.findEditorContentsByCategoryIdsAndBodyTypeIds(categoryIds, bodyTypeIds, pageable);
+        return page.map(this::toListDto);
+    }
+
+    @Override
+    public Page<ContentListResponseDto> getCustomContents(List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
+        Page<Content> page = contentRepository.findCustomContentsByCategoryIdsAndBodyTypeIds(categoryIds, bodyTypeIds, pageable);
+        return page.map(this::toListDto);
+    }
+
     private ContentListResponseDto toListDto(Content content) {
         ContentListResponseDto dto = new ContentListResponseDto();
         dto.setId(content.getId());

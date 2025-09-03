@@ -210,12 +210,53 @@ public class S3ServiceImpl implements S3Service {
 
     private void deleteFileFromS3(String fileUrl) {
         try {
-            // S3 URL에서 키 추출 (https://bucket.s3.region.amazonaws.com/path/to/file.jpg)
-            String key = fileUrl.replace("https://" + bucket + ".s3.amazonaws.com/", "");
+            // S3 URL에서 키 추출 (다양한 S3 URL 형식 지원)
+            String key = extractS3KeyFromUrl(fileUrl);
+            log.info("S3 파일 삭제 시도 - bucket: {}, key: {}", bucket, key);
             amazonS3.deleteObject(bucket, key);
+            log.info("S3 파일 삭제 성공 - key: {}", key);
         } catch (Exception e) {
             log.error("S3 파일 삭제 실패 - fileUrl: {}, error: {}", fileUrl, e.getMessage());
             throw new RestApiException(S3ErrorStatus.FILE_DELETION_FAILED);
+        }
+    }
+    
+    /**
+     * S3 URL에서 객체 키를 추출합니다.
+     * 다양한 S3 URL 형식을 지원합니다:
+     * 1. https://bucket.s3.amazonaws.com/path/file.jpg
+     * 2. https://bucket.s3.region.amazonaws.com/path/file.jpg
+     * 3. https://s3.region.amazonaws.com/bucket/path/file.jpg
+     */
+    private String extractS3KeyFromUrl(String fileUrl) {
+        try {
+            // URL 파싱
+            java.net.URL url = new java.net.URL(fileUrl);
+            String host = url.getHost();
+            String path = url.getPath();
+            
+            // 경로 스타일 URL 처리 (https://s3.region.amazonaws.com/bucket/path/file.jpg)
+            if (host.startsWith("s3.") && host.contains(".amazonaws.com")) {
+                // path는 "/bucket/path/file.jpg" 형태
+                String[] pathParts = path.split("/", 3);
+                if (pathParts.length >= 3 && pathParts[1].equals(bucket)) {
+                    return pathParts[2]; // "path/file.jpg"
+                }
+            }
+            
+            // 버킷 스타일 URL 처리 (https://bucket.s3.amazonaws.com/path/file.jpg)
+            if (host.startsWith(bucket + ".s3") && host.contains(".amazonaws.com")) {
+                // path는 "/path/file.jpg" 형태
+                return path.startsWith("/") ? path.substring(1) : path;
+            }
+            
+            // 기본 처리: URL에서 마지막 부분을 키로 사용
+            log.warn("알 수 없는 S3 URL 형식 - fileUrl: {}, host: {}, path: {}", fileUrl, host, path);
+            return path.startsWith("/") ? path.substring(1) : path;
+            
+        } catch (Exception e) {
+            log.error("S3 URL 파싱 실패 - fileUrl: {}, error: {}", fileUrl, e.getMessage());
+            throw new RestApiException(S3ErrorStatus.INVALID_FILE_URL);
         }
     }
 
@@ -260,13 +301,54 @@ public class S3ServiceImpl implements S3Service {
         if (fileUrl == null || fileUrl.trim().isEmpty()) {
             throw new RestApiException(S3ErrorStatus.INVALID_FILE_URL);
         }
-        if (!fileUrl.contains(".s3.amazonaws.com/")) {
+        
+        try {
+            // URL 형식 검증
+            java.net.URL url = new java.net.URL(fileUrl);
+            String host = url.getHost();
+            
+            // S3 URL 형식 검증 (다양한 형식 지원)
+            boolean isValidS3Url = host.contains(".s3") && host.contains(".amazonaws.com");
+            if (!isValidS3Url) {
+                log.error("유효하지 않은 S3 URL 형식 - fileUrl: {}, host: {}", fileUrl, host);
+                throw new RestApiException(S3ErrorStatus.INVALID_FILE_URL);
+            }
+            
+            // URL에서 키 추출 테스트
+            String key = extractS3KeyFromUrl(fileUrl);
+            if (key == null || key.trim().isEmpty()) {
+                log.error("S3 URL에서 유효한 키를 추출할 수 없음 - fileUrl: {}", fileUrl);
+                throw new RestApiException(S3ErrorStatus.INVALID_FILE_URL);
+            }
+            
+        } catch (java.net.MalformedURLException e) {
+            log.error("잘못된 URL 형식 - fileUrl: {}, error: {}", fileUrl, e.getMessage());
+            throw new RestApiException(S3ErrorStatus.INVALID_FILE_URL);
+        } catch (RestApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("URL 검증 중 오류 발생 - fileUrl: {}, error: {}", fileUrl, e.getMessage());
             throw new RestApiException(S3ErrorStatus.INVALID_FILE_URL);
         }
     }
     
     private void validateUserAccess(String fileUrl, Integer userId) {
-        if (!fileUrl.contains("/contents/users/" + userId + "/")) {
+        try {
+            // URL에서 키 추출
+            String key = extractS3KeyFromUrl(fileUrl);
+            
+            // 사용자 디렉토리 경로 검증
+            String expectedUserPath = "contents/users/" + userId + "/";
+            if (!key.startsWith(expectedUserPath)) {
+                log.error("사용자 접근 권한 없음 - fileUrl: {}, userId: {}, key: {}, expectedPath: {}", 
+                         fileUrl, userId, key, expectedUserPath);
+                throw new RestApiException(S3ErrorStatus.UNAUTHORIZED_FILE_ACCESS);
+            }
+        } catch (RestApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("사용자 접근 권한 검증 중 오류 - fileUrl: {}, userId: {}, error: {}", 
+                     fileUrl, userId, e.getMessage());
             throw new RestApiException(S3ErrorStatus.UNAUTHORIZED_FILE_ACCESS);
         }
     }

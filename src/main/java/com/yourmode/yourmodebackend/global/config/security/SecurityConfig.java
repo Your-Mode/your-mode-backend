@@ -47,8 +47,13 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/docs/**",
                                 "/api/auth/**",
-                                "/api/content/s3/**" // S3 API - JWT 토큰 없이 접근 가능
+                                "/api/content/s3/**", // S3 API - JWT 토큰 없이 접근 가능
+                                "/api/contents", // 컨텐츠 전체 목록 조회 - 공개 접근 가능
+                                "/api/contents/*", // 컨텐츠 상세 조회 - 공개 접근 가능
+                                "/api/contents/editor", // 에디터 컨텐츠 목록 조회 - 공개 접근 가능
+                                "/api/contents/custom" // 맞춤형 컨텐츠 목록 조회 - 공개 접근 가능
                         ).permitAll()
+                        .requestMatchers("/api/contents/my/**").authenticated() // 내 컨텐츠 조회는 인증 필요
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                         .anyRequest().authenticated() // 그 외 모든 요청은 인증 필요
                 );

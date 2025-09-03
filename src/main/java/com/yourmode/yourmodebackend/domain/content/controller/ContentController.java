@@ -34,7 +34,8 @@ public class ContentController {
     @PostMapping
     @Operation(
         summary = "컨텐츠 생성",
-        description = "새로운 컨텐츠를 생성합니다. mainImgUrl과 block의 imageUrl에는 S3에 업로드된 파일의 URL을 입력해야 합니다.",
+        description = "새로운 컨텐츠를 생성합니다. mainImgUrl과 block의 imageUrl에는 S3에 업로드된 파일의 URL을 입력해야 합니다. " +
+                     "contentsRequestId는 선택사항이며, null로 설정하면 에디터 컨텐츠(자유 작성)로, 값을 설정하면 맞춤형 컨텐츠(사용자 요청 기반)로 생성됩니다.",
         requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
             content = @io.swagger.v3.oas.annotations.media.Content(
                 mediaType = "application/json",
@@ -122,7 +123,7 @@ public class ContentController {
                     "mainImgUrl": "https://your-bucket.s3.amazonaws.com/updated-main-image.jpg",
                     "isRecommended": false,
                     "publishAt": "2025-08-15T10:00:00",
-                    "contentsRequestId": 1,
+                    "contentsRequestId": null,
                     "categoryIds": [1, 3],
                     "bodyTypeIds": [2, 4],
                     "blocks": [

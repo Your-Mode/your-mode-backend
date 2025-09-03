@@ -43,7 +43,7 @@ public class Content {
     private User editor;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "content_request_id", nullable = false)
+    @JoinColumn(name = "content_request_id", nullable = true)
     private ContentRequest contentRequest;
 
     @ManyToMany
