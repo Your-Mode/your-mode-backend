@@ -32,7 +32,7 @@ public class FileDeleteRequestDto {
     )
     @NotBlank(message = "파일 URL은 필수입니다.")
     @Pattern(
-        regexp = "^https://.*\\.s3\\.amazonaws\\.com/.*$",
+        regexp = "^https://.*\\.s3.*\\.amazonaws\\.com/.*$",
         message = "유효한 S3 URL 형식이 아닙니다."
     )
     private String fileUrl;
