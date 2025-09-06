@@ -18,6 +18,7 @@ public class ContentDetailResponseDto {
     private List<ContentBlockDto> blocks;
     private Long likeCount;
     private Long commentCount;
+    private Long viewCount;
 
     @Data
     public static class CategoryDto {

@@ -6,6 +6,7 @@ import com.yourmode.yourmodebackend.domain.content.entity.Content;
 import com.yourmode.yourmodebackend.domain.content.repository.ContentRepository;
 import com.yourmode.yourmodebackend.domain.content.repository.ContentLikeRepository;
 import com.yourmode.yourmodebackend.domain.content.repository.ContentCommentRepository;
+import com.yourmode.yourmodebackend.domain.content.repository.ContentViewRepository;
 import com.yourmode.yourmodebackend.domain.content.status.ContentErrorStatus;
 import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class ContentQueryServiceImpl implements ContentQueryService {
     private final ContentRepository contentRepository;
     private final ContentLikeRepository contentLikeRepository;
     private final ContentCommentRepository contentCommentRepository;
+    private final ContentViewRepository contentViewRepository;
 
     @Override
     public Page<ContentListResponseDto> getContents(List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
@@ -114,9 +116,10 @@ public class ContentQueryServiceImpl implements ContentQueryService {
             }).collect(Collectors.toList()));
         }
         
-        // 좋아요 수와 댓글 수 추가
+        // 좋아요 수, 댓글 수, 조회수 추가
         dto.setLikeCount(getLikeCount(content.getId()));
         dto.setCommentCount(getCommentCount(content.getId()));
+        dto.setViewCount(getViewCount(content.getId()));
         
         return dto;
     }
@@ -175,9 +178,10 @@ public class ContentQueryServiceImpl implements ContentQueryService {
             }).collect(Collectors.toList()));
         }
         
-        // 좋아요 수와 댓글 수 추가
+        // 좋아요 수, 댓글 수, 조회수 추가
         dto.setLikeCount(getLikeCount(content.getId()));
         dto.setCommentCount(getCommentCount(content.getId()));
+        dto.setViewCount(getViewCount(content.getId()));
         
         return dto;
     }
@@ -195,6 +199,14 @@ public class ContentQueryServiceImpl implements ContentQueryService {
      */
     private Long getCommentCount(Integer contentId) {
         Long count = contentCommentRepository.countByContentId(contentId);
+        return count != null ? count : 0L;
+    }
+
+    /**
+     * 콘텐츠의 조회수를 조회합니다.
+     */
+    private Long getViewCount(Integer contentId) {
+        Long count = contentViewRepository.countByContentId(contentId);
         return count != null ? count : 0L;
     }
 }

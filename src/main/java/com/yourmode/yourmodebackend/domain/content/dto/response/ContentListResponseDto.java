@@ -17,6 +17,7 @@ public class ContentListResponseDto {
     private List<BodyTypeDto> bodyTypes;
     private Long likeCount;
     private Long commentCount;
+    private Long viewCount;
 
     @Data
     public static class CategoryDto {

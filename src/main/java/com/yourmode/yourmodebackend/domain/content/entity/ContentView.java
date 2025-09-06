@@ -9,13 +9,14 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "content_views")
-@Getter @Setter @NoArgsConstructor
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ContentView {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(name = "viewed_at", nullable = false)
+    @Builder.Default
     private LocalDateTime viewedAt = LocalDateTime.now();
 
     @ManyToOne(fetch = FetchType.LAZY)
