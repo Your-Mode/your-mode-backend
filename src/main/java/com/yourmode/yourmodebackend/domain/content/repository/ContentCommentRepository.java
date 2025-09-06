@@ -25,6 +25,17 @@ public interface ContentCommentRepository extends JpaRepository<ContentComment, 
     Long countByContentId(Integer contentId);
     
     /**
+     * 사용자가 작성한 댓글 수 조회
+     */
+    Long countByUserId(Integer userId);
+    
+    /**
+     * 사용자가 댓글을 작성한 컨텐츠 수 조회 (중복 제거)
+     */
+    @Query("SELECT COUNT(DISTINCT cc.content.id) FROM ContentComment cc WHERE cc.user.id = :userId")
+    Long countDistinctContentIdByUserId(@Param("userId") Integer userId);
+    
+    /**
      * 사용자가 작성한 댓글인지 확인
      */
     boolean existsByIdAndUser(Integer commentId, User user);
