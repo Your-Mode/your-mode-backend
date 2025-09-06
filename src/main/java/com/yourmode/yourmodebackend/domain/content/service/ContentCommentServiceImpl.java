@@ -33,6 +33,10 @@ public class ContentCommentServiceImpl implements ContentCommentService {
     @Override
     @Transactional
     public CommentResponseDto createComment(Integer contentId, Integer userId, CommentCreateRequestDto request) {
+        if (userId == null) {
+            throw new RestApiException(UserErrorStatus.ACCESS_DENIED);
+        }
+        
         // 콘텐츠 존재 여부 확인
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> new RestApiException(ContentErrorStatus.CONTENT_NOT_FOUND));
@@ -99,6 +103,10 @@ public class ContentCommentServiceImpl implements ContentCommentService {
     @Override
     @Transactional
     public CommentResponseDto updateComment(Integer commentId, Integer userId, CommentUpdateRequestDto request) {
+        if (userId == null) {
+            throw new RestApiException(UserErrorStatus.ACCESS_DENIED);
+        }
+        
         // 댓글 존재 여부 및 작성자 확인
         ContentComment comment = contentCommentRepository.findByIdWithUser(commentId)
                 .orElseThrow(() -> new RestApiException(ContentErrorStatus.COMMENT_NOT_FOUND));
@@ -125,6 +133,10 @@ public class ContentCommentServiceImpl implements ContentCommentService {
     @Override
     @Transactional
     public void deleteComment(Integer commentId, Integer userId) {
+        if (userId == null) {
+            throw new RestApiException(UserErrorStatus.ACCESS_DENIED);
+        }
+        
         // 댓글 존재 여부 및 작성자 확인
         ContentComment comment = contentCommentRepository.findByIdWithUser(commentId)
                 .orElseThrow(() -> new RestApiException(ContentErrorStatus.COMMENT_NOT_FOUND));

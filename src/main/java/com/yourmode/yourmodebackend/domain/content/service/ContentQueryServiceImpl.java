@@ -44,6 +44,10 @@ public class ContentQueryServiceImpl implements ContentQueryService {
 
     @Override
     public Page<ContentListResponseDto> getMyContents(Integer userId, List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
+        if (userId == null) {
+            throw new RestApiException(ContentErrorStatus.FORBIDDEN_CONTENT_ACCESS);
+        }
+        
         Page<Content> page = contentRepository.findByUserIdAndCategoryIdsAndBodyTypeIds(userId, categoryIds, bodyTypeIds, pageable);
         return page.map(this::toListDto);
     }

@@ -41,6 +41,10 @@ public class ContentServiceImpl implements ContentService {
     @Override
     @Transactional
     public ContentDetailResponseDto createContent(ContentCreateRequestDto dto, Integer editorId) {
+        if (editorId == null) {
+            throw new RestApiException(ContentErrorStatus.FORBIDDEN_CONTENT_ACCESS);
+        }
+        
         User editor = userRepository.findById(editorId)
                 .orElseThrow(() -> new RestApiException(ContentErrorStatus.FORBIDDEN_CONTENT_ACCESS));
 
@@ -183,6 +187,10 @@ public class ContentServiceImpl implements ContentService {
     @Override
     @Transactional
     public ContentDetailResponseDto updateContent(Integer contentId, ContentCreateRequestDto dto, Integer editorId) {
+        if (editorId == null) {
+            throw new RestApiException(ContentErrorStatus.FORBIDDEN_CONTENT_ACCESS);
+        }
+        
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> new RestApiException(ContentErrorStatus.CONTENT_NOT_FOUND));
         if (!content.getEditor().getId().equals(editorId)) {
@@ -305,6 +313,10 @@ public class ContentServiceImpl implements ContentService {
     @Override
     @Transactional
     public void deleteContent(Integer contentId, Integer editorId) {
+        if (editorId == null) {
+            throw new RestApiException(ContentErrorStatus.FORBIDDEN_CONTENT_ACCESS);
+        }
+        
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> new RestApiException(ContentErrorStatus.CONTENT_NOT_FOUND));
         
