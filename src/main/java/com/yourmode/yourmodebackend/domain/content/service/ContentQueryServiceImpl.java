@@ -4,6 +4,9 @@ import com.yourmode.yourmodebackend.domain.content.dto.response.ContentDetailRes
 import com.yourmode.yourmodebackend.domain.content.dto.response.ContentListResponseDto;
 import com.yourmode.yourmodebackend.domain.content.entity.Content;
 import com.yourmode.yourmodebackend.domain.content.repository.ContentRepository;
+import com.yourmode.yourmodebackend.domain.content.repository.ContentLikeRepository;
+import com.yourmode.yourmodebackend.domain.content.repository.ContentCommentRepository;
+import com.yourmode.yourmodebackend.domain.content.repository.ContentViewRepository;
 import com.yourmode.yourmodebackend.domain.content.status.ContentErrorStatus;
 import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +22,9 @@ import java.util.stream.Collectors;
 public class ContentQueryServiceImpl implements ContentQueryService {
 
     private final ContentRepository contentRepository;
+    private final ContentLikeRepository contentLikeRepository;
+    private final ContentCommentRepository contentCommentRepository;
+    private final ContentViewRepository contentViewRepository;
 
     @Override
     public Page<ContentListResponseDto> getContents(List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
@@ -44,6 +50,10 @@ public class ContentQueryServiceImpl implements ContentQueryService {
 
     @Override
     public Page<ContentListResponseDto> getMyContents(Integer userId, List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
+        if (userId == null) {
+            throw new RestApiException(ContentErrorStatus.FORBIDDEN_CONTENT_ACCESS);
+        }
+        
         Page<Content> page = contentRepository.findByUserIdAndCategoryIdsAndBodyTypeIds(userId, categoryIds, bodyTypeIds, pageable);
         return page.map(this::toListDto);
     }
@@ -57,6 +67,26 @@ public class ContentQueryServiceImpl implements ContentQueryService {
     @Override
     public Page<ContentListResponseDto> getCustomContents(List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
         Page<Content> page = contentRepository.findCustomContentsByCategoryIdsAndBodyTypeIds(categoryIds, bodyTypeIds, pageable);
+        return page.map(this::toListDto);
+    }
+
+    @Override
+    public Page<ContentListResponseDto> getContentsByUserComments(Integer userId, List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
+        if (userId == null) {
+            throw new RestApiException(ContentErrorStatus.FORBIDDEN_CONTENT_ACCESS);
+        }
+        
+        Page<Content> page = contentRepository.findContentsByUserComments(userId, categoryIds, bodyTypeIds, pageable);
+        return page.map(this::toListDto);
+    }
+
+    @Override
+    public Page<ContentListResponseDto> getContentsByUserLikes(Integer userId, List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
+        if (userId == null) {
+            throw new RestApiException(ContentErrorStatus.FORBIDDEN_CONTENT_ACCESS);
+        }
+        
+        Page<Content> page = contentRepository.findContentsByUserLikes(userId, categoryIds, bodyTypeIds, pageable);
         return page.map(this::toListDto);
     }
 
@@ -85,6 +115,12 @@ public class ContentQueryServiceImpl implements ContentQueryService {
                 return b;
             }).collect(Collectors.toList()));
         }
+        
+        // 좋아요 수, 댓글 수, 조회수 추가
+        dto.setLikeCount(getLikeCount(content.getId()));
+        dto.setCommentCount(getCommentCount(content.getId()));
+        dto.setViewCount(getViewCount(content.getId()));
+        
         return dto;
     }
 
@@ -141,7 +177,37 @@ public class ContentQueryServiceImpl implements ContentQueryService {
                 return b;
             }).collect(Collectors.toList()));
         }
+        
+        // 좋아요 수, 댓글 수, 조회수 추가
+        dto.setLikeCount(getLikeCount(content.getId()));
+        dto.setCommentCount(getCommentCount(content.getId()));
+        dto.setViewCount(getViewCount(content.getId()));
+        
         return dto;
+    }
+
+    /**
+     * 콘텐츠의 좋아요 수를 조회합니다.
+     */
+    private Long getLikeCount(Integer contentId) {
+        Long count = contentLikeRepository.countByContentId(contentId);
+        return count != null ? count : 0L;
+    }
+
+    /**
+     * 콘텐츠의 댓글 수를 조회합니다.
+     */
+    private Long getCommentCount(Integer contentId) {
+        Long count = contentCommentRepository.countByContentId(contentId);
+        return count != null ? count : 0L;
+    }
+
+    /**
+     * 콘텐츠의 조회수를 조회합니다.
+     */
+    private Long getViewCount(Integer contentId) {
+        Long count = contentViewRepository.countByContentId(contentId);
+        return count != null ? count : 0L;
     }
 }
 

@@ -19,6 +19,12 @@ public interface ContentQueryService {
     
     // 맞춤형 컨텐츠 목록 조회 (ContentRequest가 있는 컨텐츠 - 사용자 요청에 의해 작성)
     Page<ContentListResponseDto> getCustomContents(List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable);
+    
+    // 사용자가 댓글을 단 컨텐츠 목록 조회
+    Page<ContentListResponseDto> getContentsByUserComments(Integer userId, List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable);
+    
+    // 사용자가 좋아요한 컨텐츠 목록 조회
+    Page<ContentListResponseDto> getContentsByUserLikes(Integer userId, List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable);
 }
 
 

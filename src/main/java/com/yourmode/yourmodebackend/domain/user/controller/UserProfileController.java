@@ -1,6 +1,7 @@
 package com.yourmode.yourmodebackend.domain.user.controller;
 
 import com.yourmode.yourmodebackend.domain.user.dto.request.*;
+import com.yourmode.yourmodebackend.domain.user.dto.response.MyPageComponentResponseDto;
 import com.yourmode.yourmodebackend.domain.user.dto.response.UserProfileResponseDto;
 import com.yourmode.yourmodebackend.global.common.base.BaseResponse;
 import com.yourmode.yourmodebackend.global.config.security.auth.CurrentUser;
@@ -48,14 +49,13 @@ public class UserProfileController {
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
                         "result": {
-                            "userId": 1,
+                            "email": "hong@example.com",
                             "name": "홍길동",
                             "phoneNumber": "01012345678",
                             "height": 175.5,
                             "weight": 68.2,
                             "gender": "MALE",
-                            "bodyTypeId": 1,
-                            "bodyTypeName": "스트레이트"
+                            "bodyTypeId": 1
                         }
                     }
                     """
@@ -131,13 +131,12 @@ public class UserProfileController {
                         "code": "COMMON200",
                         "message": "요청에 성공하였습니다.",
                         "result": {
-                            "userId": 1,
                             "name": "홍길동",
                             "phoneNumber": "01012345678",
                             "height": 180.0,
                             "weight": 70.0,
                             "gender": "MALE",
-                            "bodyTypeId": 2,
+                            "bodyTypeId": 2
                         }
                     }
                     """
@@ -274,21 +273,34 @@ public class UserProfileController {
         ),
         @ApiResponse(
             responseCode = "400",
-            description = "잘못된 요청(비밀번호 형식 오류 등)",
+            description = "잘못된 요청(비밀번호 형식 오류, 현재 비밀번호 불일치 등)",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = BaseResponse.class),
-                examples = @ExampleObject(
-                    name = "비밀번호 형식 오류",
-                    summary = "비밀번호가 정책에 맞지 않는 경우",
-                    value = """
-                    {
-                        "timestamp": "2025-06-29T12:36:00.000",
-                        "code": "AUTH-400-001",
-                        "message": "비밀번호는 8자 이상, 영문/숫자/특수문자를 포함해야 합니다."
-                    }
-                    """
-                )
+                examples = {
+                    @ExampleObject(
+                        name = "비밀번호 형식 오류",
+                        summary = "새 비밀번호가 정책에 맞지 않는 경우",
+                        value = """
+                        {
+                            "timestamp": "2025-06-29T12:36:00.000",
+                            "code": "AUTH-400-001",
+                            "message": "비밀번호는 8자 이상, 영문/숫자/특수문자를 포함해야 합니다."
+                        }
+                        """
+                    ),
+                    @ExampleObject(
+                        name = "현재 비밀번호 불일치",
+                        summary = "입력한 현재 비밀번호가 올바르지 않은 경우",
+                        value = """
+                        {
+                            "timestamp": "2025-06-29T12:36:00.000",
+                            "code": "AUTH-400-007",
+                            "message": "현재 비밀번호가 올바르지 않습니다."
+                        }
+                        """
+                    )
+                }
             )
         ),
         @ApiResponse(
@@ -354,8 +366,89 @@ public class UserProfileController {
             @CurrentUser PrincipalDetails principal,
             @RequestBody @Valid PasswordUpdateRequestDto request
     ) {
-        userProfileService.updatePassword(principal.getUserId(), request.getNewPassword());
+        userProfileService.updatePassword(principal.getUserId(), request.getCurrentPassword(), request.getNewPassword());
         return ResponseEntity.ok(BaseResponse.onSuccess("비밀번호가 성공적으로 변경되었습니다."));
+    }
+
+    /**
+     * 마이페이지 컴포넌트용 정보를 조회합니다.
+     * @param principal 인증된 사용자 정보
+     * @return 마이페이지 컴포넌트 정보
+     */
+    @Operation(summary = "마이페이지 컴포넌트 조회", description = "이메일, 체형, 맞춤 컨텐츠 수, 조회한 컨텐츠 수, 좋아요한 컨텐츠 수, 댓글단 컨텐츠 수를 조회합니다.")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "마이페이지 컴포넌트 조회 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = @ExampleObject(
+                    name = "마이페이지 컴포넌트 조회 성공 예시",
+                    summary = "마이페이지 컴포넌트 정보 반환",
+                    value = """
+                    {
+                        "timestamp": "2025-01-15T12:34:56.789",
+                        "code": "COMMON200",
+                        "message": "요청에 성공하였습니다.",
+                        "result": {
+                            "email": "hong@example.com",
+                            "bodyTypeId": 1,
+                            "customContentsCount": 5,
+                            "viewedContentsCount": 25,
+                            "likedContentsCount": 12,
+                            "commentedContentsCount": 8,
+                            "myCommentsCount": 15
+                        }
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "접근 권한 없음",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = @ExampleObject(
+                    name = "접근 권한 없음",
+                    summary = "인증 정보가 없거나 접근 권한이 없는 경우",
+                    value = """
+                    {
+                        "timestamp": "2025-01-15T12:35:00.000",
+                        "code": "AUTH-403-001",
+                        "message": "접근 권한이 없습니다. 인증 정보를 확인해주세요."
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "사용자 또는 프로필 정보 없음",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BaseResponse.class),
+                examples = @ExampleObject(
+                    name = "사용자 없음",
+                    summary = "사용자 또는 프로필 정보가 없는 경우",
+                    value = """
+                    {
+                        "timestamp": "2025-01-15T12:35:00.000",
+                        "code": "AUTH-404-001",
+                        "message": "해당 이메일의 사용자를 찾을 수 없습니다."
+                    }
+                    """
+                )
+            )
+        )
+    })
+    @GetMapping("/mypage/component")
+    public ResponseEntity<BaseResponse<MyPageComponentResponseDto>> getMyPageComponent(@CurrentUser PrincipalDetails principal) {
+        return ResponseEntity.ok(BaseResponse.onSuccess(
+                userProfileService.getMyPageComponent(principal.getUserId())
+        ));
     }
 }
 

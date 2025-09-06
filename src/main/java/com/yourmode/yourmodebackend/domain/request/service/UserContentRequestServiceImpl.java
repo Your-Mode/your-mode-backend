@@ -45,6 +45,10 @@ public class UserContentRequestServiceImpl implements UserContentRequestService 
     @Override
     @Transactional
     public ContentRequestResponseDto createContentRequest(ContentRequestCreateDto dto, Integer userId) {
+        if (userId == null) {
+            throw new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND);
+        }
+        
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND));
         RequestStatusCode initialStatus = requestStatusCodeRepository.findByCodeName("신청 접수")
@@ -89,6 +93,10 @@ public class UserContentRequestServiceImpl implements UserContentRequestService 
 
     @Override
     public List<UserContentRequestSummaryDto> getRequestsByUserId(Integer userId) {
+        if (userId == null) {
+            throw new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND);
+        }
+        
         List<ContentRequest> requests = contentRequestRepository.findAllByUserId(userId);
         return requests.stream().map(request -> {
             List<ContentRequestStatusHistoryDto> historyDtos = request.getStatusHistories().stream()
@@ -113,6 +121,10 @@ public class UserContentRequestServiceImpl implements UserContentRequestService 
 
     @Override
     public UserContentRequestDetailDto getContentRequestById(Integer id, Integer userId) {
+        if (userId == null) {
+            throw new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND);
+        }
+        
         ContentRequest request = contentRequestRepository.findById(id)
                 .orElseThrow(() -> new RestApiException(RequestErrorStatus.REQUEST_NOT_FOUND));
         List<Integer> itemCategoryIds = request.getItemCategories().stream()

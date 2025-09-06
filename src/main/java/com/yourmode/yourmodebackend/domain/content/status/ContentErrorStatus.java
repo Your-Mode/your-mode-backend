@@ -18,7 +18,19 @@ public enum ContentErrorStatus implements BaseCodeInterface {
     DB_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CONT-500-002", "컨텐츠 정보 수정 중 오류가 발생했습니다."),
     DB_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CONT-500-003", "컨텐츠 정보 삭제 중 오류가 발생했습니다."),
     BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "CONT-404-004", "해당 컨텐츠 블록을 찾을 수 없습니다."),
-    IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "CONT-404-005", "해당 컨텐츠 이미지를 찾을 수 없습니다.");
+    IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "CONT-404-005", "해당 컨텐츠 이미지를 찾을 수 없습니다."),
+    
+    // 댓글 관련 에러
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "CONT-404-006", "해당 댓글을 찾을 수 없습니다."),
+    COMMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "CONT-403-002", "댓글에 대한 접근 권한이 없습니다."),
+    COMMENT_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CONT-500-004", "댓글 수정 중 오류가 발생했습니다."),
+    COMMENT_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CONT-500-005", "댓글 삭제 중 오류가 발생했습니다."),
+    
+    // 좋아요 관련 에러
+    LIKE_ALREADY_EXISTS(HttpStatus.CONFLICT, "CONT-409-001", "이미 좋아요를 누른 콘텐츠입니다."),
+    LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "CONT-404-007", "해당 좋아요를 찾을 수 없습니다."),
+    LIKE_ADD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CONT-500-006", "좋아요 추가 중 오류가 발생했습니다."),
+    LIKE_REMOVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CONT-500-007", "좋아요 제거 중 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;
     private final boolean isSuccess = false;

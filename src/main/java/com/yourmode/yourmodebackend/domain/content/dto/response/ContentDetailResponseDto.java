@@ -16,6 +16,9 @@ public class ContentDetailResponseDto {
     private List<CategoryDto> categories;
     private List<BodyTypeDto> bodyTypes;
     private List<ContentBlockDto> blocks;
+    private Long likeCount;
+    private Long commentCount;
+    private Long viewCount;
 
     @Data
     public static class CategoryDto {
