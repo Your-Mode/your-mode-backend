@@ -9,6 +9,7 @@ import com.yourmode.yourmodebackend.domain.user.enums.Gender;
 @Builder
 @AllArgsConstructor
 public class UserProfileResponseDto {
+    private String email;
     private String name;
     private String phoneNumber;
     private Float height;

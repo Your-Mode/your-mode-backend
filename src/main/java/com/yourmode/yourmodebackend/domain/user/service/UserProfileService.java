@@ -22,7 +22,8 @@ public interface UserProfileService {
     /**
      * 사용자의 비밀번호를 변경합니다.
      * @param userId 사용자 ID
+     * @param currentPassword 현재 비밀번호(암호화 전)
      * @param newPassword 새 비밀번호(암호화 전)
      */
-    void updatePassword(Integer userId, String newPassword);
+    void updatePassword(Integer userId, String currentPassword, String newPassword);
 }

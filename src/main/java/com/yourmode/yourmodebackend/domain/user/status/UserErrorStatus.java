@@ -17,6 +17,7 @@ public enum UserErrorStatus implements BaseCodeInterface {
     KAKAO_AUTH_DENIED(HttpStatus.BAD_REQUEST, "AUTH-400-004", "카카오 인증이 거부되었습니다."),
     KAKAO_AUTH_CODE_MISSING(HttpStatus.BAD_REQUEST, "AUTH-400-005", "인가 코드가 필요합니다."),
     LOGOUT_NO_ACTIVE_SESSION(HttpStatus.BAD_REQUEST, "AUTH-400-006", "로그아웃할 활성 세션이 존재하지 않습니다."),
+    INVALID_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH-400-007", "현재 비밀번호가 올바르지 않습니다."),
     KAKAO_EMAIL_NOT_FOUND(HttpStatus.BAD_REQUEST, "KAKAO-400-001", "카카오 계정에서 이메일을 받아올 수 없습니다."),
 
     // 401 Unauthorized - 인증 실패

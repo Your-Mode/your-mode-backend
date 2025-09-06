@@ -47,6 +47,7 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.PROFILE_NOT_FOUND));
 
         return UserProfileResponseDto.builder()
+                .email(user.getEmail())
                 .name(user.getName())
                 .phoneNumber(user.getPhoneNumber())
                 .height(profile.getHeight())
@@ -106,22 +107,30 @@ public class UserProfileServiceImpl implements UserProfileService {
     /**
      * 사용자의 비밀번호를 변경합니다.
      * @param userId 사용자 ID
+     * @param currentPassword 현재 비밀번호(암호화 전)
      * @param newPassword 새 비밀번호(암호화 전)
-     * @throws RestApiException ACCESS_DENIED, USER_NOT_FOUND, CREDENTIAL_NOT_FOUND, INVALID_PASSWORD_FORMAT 등
+     * @throws RestApiException ACCESS_DENIED, USER_NOT_FOUND, CREDENTIAL_NOT_FOUND, INVALID_PASSWORD_FORMAT, INVALID_CURRENT_PASSWORD 등
      */
     @Transactional
-    public void updatePassword(Integer userId, String newPassword) {
+    public void updatePassword(Integer userId, String currentPassword, String newPassword) {
         if (userId == null) {
             throw new RestApiException(UserErrorStatus.ACCESS_DENIED);
         }
         
-        // 비밀번호 유효성 검증
+        // 새 비밀번호 유효성 검증
         validatePassword(newPassword);
         
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.USER_NOT_FOUND));
         UserCredential credential = userCredentialRepository.findByUser(user)
                 .orElseThrow(() -> new RestApiException(UserErrorStatus.CREDENTIAL_NOT_FOUND));
+        
+        // 현재 비밀번호 검증
+        if (!passwordEncoder.matches(currentPassword, credential.getPasswordHash())) {
+            throw new RestApiException(UserErrorStatus.INVALID_CURRENT_PASSWORD);
+        }
+        
+        // 새 비밀번호로 업데이트
         credential.setPasswordHash(passwordEncoder.encode(newPassword));
         userCredentialRepository.save(credential);
     }
