@@ -71,5 +71,40 @@ public interface ContentRepository extends JpaRepository<Content, Integer> {
             Pageable pageable
     );
 
+    // 사용자가 댓글을 단 컨텐츠 목록 조회
+    @Query("""
+            SELECT DISTINCT c FROM Content c 
+            LEFT JOIN c.contentCategories cc 
+            LEFT JOIN c.bodyTypes bt 
+            INNER JOIN ContentComment cm ON c.id = cm.content.id
+            WHERE cm.user.id = :userId
+            AND (:categoryIds IS NULL OR cc.id IN :categoryIds)
+            AND (:bodyTypeIds IS NULL OR bt.id IN :bodyTypeIds)
+            ORDER BY c.createdAt DESC
+            """)
+    Page<Content> findContentsByUserComments(
+            @Param("userId") Integer userId,
+            @Param("categoryIds") List<Integer> categoryIds,
+            @Param("bodyTypeIds") List<Integer> bodyTypeIds,
+            Pageable pageable
+    );
+
+    // 사용자가 좋아요한 컨텐츠 목록 조회
+    @Query("""
+            SELECT DISTINCT c FROM Content c 
+            LEFT JOIN c.contentCategories cc 
+            LEFT JOIN c.bodyTypes bt 
+            INNER JOIN ContentLike cl ON c.id = cl.content.id
+            WHERE cl.user.id = :userId
+            AND (:categoryIds IS NULL OR cc.id IN :categoryIds)
+            AND (:bodyTypeIds IS NULL OR bt.id IN :bodyTypeIds)
+            ORDER BY c.createdAt DESC
+            """)
+    Page<Content> findContentsByUserLikes(
+            @Param("userId") Integer userId,
+            @Param("categoryIds") List<Integer> categoryIds,
+            @Param("bodyTypeIds") List<Integer> bodyTypeIds,
+            Pageable pageable
+    );
 
 }

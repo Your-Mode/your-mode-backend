@@ -68,6 +68,26 @@ public class ContentQueryServiceImpl implements ContentQueryService {
         return page.map(this::toListDto);
     }
 
+    @Override
+    public Page<ContentListResponseDto> getContentsByUserComments(Integer userId, List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
+        if (userId == null) {
+            throw new RestApiException(ContentErrorStatus.FORBIDDEN_CONTENT_ACCESS);
+        }
+        
+        Page<Content> page = contentRepository.findContentsByUserComments(userId, categoryIds, bodyTypeIds, pageable);
+        return page.map(this::toListDto);
+    }
+
+    @Override
+    public Page<ContentListResponseDto> getContentsByUserLikes(Integer userId, List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
+        if (userId == null) {
+            throw new RestApiException(ContentErrorStatus.FORBIDDEN_CONTENT_ACCESS);
+        }
+        
+        Page<Content> page = contentRepository.findContentsByUserLikes(userId, categoryIds, bodyTypeIds, pageable);
+        return page.map(this::toListDto);
+    }
+
     private ContentListResponseDto toListDto(Content content) {
         ContentListResponseDto dto = new ContentListResponseDto();
         dto.setId(content.getId());
