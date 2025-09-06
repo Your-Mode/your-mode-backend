@@ -15,6 +15,8 @@ public class ContentListResponseDto {
     private LocalDateTime editedAt;
     private List<CategoryDto> categories;
     private List<BodyTypeDto> bodyTypes;
+    private Long likeCount;
+    private Long commentCount;
 
     @Data
     public static class CategoryDto {

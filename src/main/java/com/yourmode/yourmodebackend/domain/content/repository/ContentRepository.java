@@ -11,11 +11,6 @@ import java.util.List;
 
 public interface ContentRepository extends JpaRepository<Content, Integer> {
 
-    @Query(
-            value = "select distinct c from Content c left join c.contentCategories cc where cc.id in :categoryIds",
-            countQuery = "select count(distinct c) from Content c left join c.contentCategories cc where cc.id in :categoryIds"
-    )
-    Page<Content> findByCategoryIds(@Param("categoryIds") List<Integer> categoryIds, Pageable pageable);
 
     @Query("""
             SELECT DISTINCT c FROM Content c 

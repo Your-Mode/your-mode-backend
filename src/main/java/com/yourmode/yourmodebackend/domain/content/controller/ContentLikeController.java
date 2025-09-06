@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/contents")
 @RequiredArgsConstructor
-@Tag(name = "ContentLike: 콘텐츠 좋아요", description = "콘텐츠 좋아요 관련 API")
+@Tag(name = "Contents: 콘텐츠 좋아요", description = "콘텐츠 좋아요 관련 API")
 public class ContentLikeController {
 
     private final ContentLikeService contentLikeService;

@@ -4,6 +4,8 @@ import com.yourmode.yourmodebackend.domain.content.dto.response.ContentDetailRes
 import com.yourmode.yourmodebackend.domain.content.dto.response.ContentListResponseDto;
 import com.yourmode.yourmodebackend.domain.content.entity.Content;
 import com.yourmode.yourmodebackend.domain.content.repository.ContentRepository;
+import com.yourmode.yourmodebackend.domain.content.repository.ContentLikeRepository;
+import com.yourmode.yourmodebackend.domain.content.repository.ContentCommentRepository;
 import com.yourmode.yourmodebackend.domain.content.status.ContentErrorStatus;
 import com.yourmode.yourmodebackend.global.common.exception.RestApiException;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,8 @@ import java.util.stream.Collectors;
 public class ContentQueryServiceImpl implements ContentQueryService {
 
     private final ContentRepository contentRepository;
+    private final ContentLikeRepository contentLikeRepository;
+    private final ContentCommentRepository contentCommentRepository;
 
     @Override
     public Page<ContentListResponseDto> getContents(List<Integer> categoryIds, List<Integer> bodyTypeIds, Pageable pageable) {
@@ -89,6 +93,11 @@ public class ContentQueryServiceImpl implements ContentQueryService {
                 return b;
             }).collect(Collectors.toList()));
         }
+        
+        // 좋아요 수와 댓글 수 추가
+        dto.setLikeCount(getLikeCount(content.getId()));
+        dto.setCommentCount(getCommentCount(content.getId()));
+        
         return dto;
     }
 
@@ -145,7 +154,28 @@ public class ContentQueryServiceImpl implements ContentQueryService {
                 return b;
             }).collect(Collectors.toList()));
         }
+        
+        // 좋아요 수와 댓글 수 추가
+        dto.setLikeCount(getLikeCount(content.getId()));
+        dto.setCommentCount(getCommentCount(content.getId()));
+        
         return dto;
+    }
+
+    /**
+     * 콘텐츠의 좋아요 수를 조회합니다.
+     */
+    private Long getLikeCount(Integer contentId) {
+        Long count = contentLikeRepository.countByContentId(contentId);
+        return count != null ? count : 0L;
+    }
+
+    /**
+     * 콘텐츠의 댓글 수를 조회합니다.
+     */
+    private Long getCommentCount(Integer contentId) {
+        Long count = contentCommentRepository.countByContentId(contentId);
+        return count != null ? count : 0L;
     }
 }
 
