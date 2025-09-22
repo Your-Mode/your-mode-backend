@@ -1,0 +1,560 @@
+package com.yourmode.yourmodebackend.domain.user.controller;
+
+import com.yourmode.yourmodebackend.domain.user.dto.request.LocalLoginRequestDto;
+import com.yourmode.yourmodebackend.domain.user.dto.request.LocalSignupRequestDto;
+import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResultDto;
+import com.yourmode.yourmodebackend.domain.user.dto.response.AuthResponseDto;
+import com.yourmode.yourmodebackend.domain.user.dto.response.UserIdResponseDto;
+import com.yourmode.yourmodebackend.domain.user.service.AuthService;
+import com.yourmode.yourmodebackend.global.common.base.BaseResponse;
+import com.yourmode.yourmodebackend.global.config.security.auth.CurrentUser;
+import com.yourmode.yourmodebackend.global.config.security.auth.PrincipalDetails;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+@Tag(name = "Auth: 회원가입, 로그인", description = "인증 관련 API (회원가입, 로그인 등)")
+public class AuthController {
+
+    private final AuthService authService;
+
+    @Value("${jwt.refresh-token-expiration}")
+    private long refreshTokenExpiration;
+
+    @Value("${cookie.secure:false}")
+    private boolean cookieSecure;
+
+    @Value("${cookie.same-site:lax}")
+    private String cookieSameSite;
+
+    /**
+     * 리프레시 토큰을 쿠키로 설정하는 헬퍼 메서드
+     */
+    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(cookieSecure);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge((int) (refreshTokenExpiration / 1000));
+
+        if (cookieSameSite != null && !cookieSameSite.isEmpty()) {
+            refreshTokenCookie.setAttribute("SameSite", cookieSameSite);
+        }
+
+        response.addCookie(refreshTokenCookie);
+    }
+
+    /**
+     * 로컬 회원가입
+     *
+     * @param request LocalSignupRequestDto - 회원가입 요청 데이터 (이메일, 비밀번호 등)
+     * @param response 쿠키 설정을 위한 HttpServletResponse
+     * @return 유저 정보를 포함한 응답 DTO
+     */
+    @Operation(summary = "로컬 회원가입", description = "이메일과 비밀번호를 통해 회원가입을 수행하고, JWT 토큰을 쿠키로 설정합니다.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "회원가입 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "회원가입 성공 예시",
+                                    summary = "회원가입 후 유저 정보 반환 (토큰은 쿠키로 설정됨)",
+                                    value = """
+                {
+                    "timestamp": "2025-06-29T12:34:56.789",
+                    "code": "COMMON200",
+                    "message": "요청에 성공하였습니다.",
+                    "result": {
+                        "user": {
+                             "name": "string",
+                             "email": "test1234@example.com",
+                             "role": "USER",
+                             "isNewUser": false
+                        }
+                    }
+                }
+                """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "중복 정보(이메일 또는 전화번호)로 인한 회원가입 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "이메일 중복 오류",
+                                            summary = "이미 가입된 이메일로 회원가입 시도",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:35:01.123",
+                    "code": "AUTH-409-001",
+                    "message": "이미 사용 중인 이메일입니다."
+                }
+                """
+                                    ),
+                                    @ExampleObject(
+                                            name = "전화번호 중복 오류",
+                                            summary = "이미 사용 중인 전화번호로 회원가입 시도",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:36:22.456",
+                    "code": "AUTH-409-002",
+                    "message": "이미 사용 중인 전화번호입니다."
+                }
+                """
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "회원가입 도중 DB 저장 중 오류 발생",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - User",
+                                            summary = "User 테이블 저장 실패 시",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:02.456",
+                        "code": "AUTH-500-001",
+                        "message": "사용자 정보를 DB에 저장하는 중 오류가 발생했습니다."
+                    }
+                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - Credential",
+                                            summary = "UserCredential 저장 실패 시",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:03.789",
+                        "code": "AUTH-500-002",
+                        "message": "사용자 인증정보 저장 중 오류가 발생했습니다."
+                    }
+                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - Profile",
+                                            summary = "UserProfile 저장 실패 시",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:04.321",
+                        "code": "AUTH-500-003",
+                        "message": "사용자 프로필 저장 중 오류가 발생했습니다."
+                    }
+                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "DB Insert 오류 - Token",
+                                            summary = "Refresh Token 저장 실패 시",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:35:05.654",
+                        "code": "AUTH-500-004",
+                        "message": "사용자 토큰 저장 중 오류가 발생했습니다."
+                    }
+                    """
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 데이터 (바디타입 등)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "존재하지 않는 바디타입",
+                                    summary = "존재하지 않는 바디타입 ID로 회원가입 시도",
+                                    value = """
+                {
+                    "timestamp": "2025-06-29T12:45:00.789",
+                    "code": "AUTH-400-003",
+                    "message": "존재하지 않는 체형입니다. 체형을 다시 선택해주세요."
+                }
+                """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "회원가입 후 인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "회원가입 후 인증 실패",
+                                    summary = "회원가입은 성공했으나, 인증(로그인) 과정에서 실패",
+                                    value = """
+                {
+                    "timestamp": "2025-06-29T12:45:00.789",
+                    "code": "AUTH-401-001",
+                    "message": "인증에 실패했습니다."
+                }
+                """
+                            )
+                    )
+            )
+    })
+        @PostMapping("/signup")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> signUp(
+            @Valid @RequestBody LocalSignupRequestDto request,
+            HttpServletResponse response
+    ) {
+        AuthResultDto authResult = authService.signUp(request);
+
+        // 리프레시 토큰을 쿠키로 설정
+        setRefreshTokenCookie(response, authResult.tokenPair().refreshToken());
+
+        // 액세스 토큰은 응답 바디로 반환
+        AuthResponseDto authResponseDto = AuthResponseDto.builder()
+                .accessToken(authResult.tokenPair().accessToken())
+                .user(authResult.userInfo())
+                .build();
+
+        return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
+    }
+
+    /**
+     * 로컬 로그인
+     *
+     * @param request LocalLoginRequestDto - 로그인 요청 데이터 (이메일, 비밀번호)
+     * @param response 쿠키 설정을 위한 HttpServletResponse
+     * @return 유저 정보를 포함한 응답 DTO
+     */
+    @Operation(summary = "로컬 로그인", description = "이메일과 비밀번호를 통해 로그인하고 JWT 토큰을 쿠키로 설정합니다.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "로그인 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(name = "로그인 성공 예시",
+                                    summary = "로그인 후 유저 정보 반환 (토큰은 쿠키로 설정됨)",
+                                    value = """
+                {
+                    "timestamp": "2025-06-29T12:34:56.789",
+                    "code": "COMMON200",
+                    "message": "요청에 성공하였습니다.",
+                    "result": {
+                        "user": {
+                            "name": "string",
+                            "email": "test1234@example.com",
+                            "role": "USER",
+                            "isNewUser": false
+                        }
+                    }
+                }
+                """)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인 과정에서 인증 실패 또는 이메일/비밀번호 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "로그인 인증 실패",
+                                            summary = "인증(로그인) 과정에서 실패",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:45:00.789",
+                    "code": "AUTH-401-001",
+                    "message": "인증에 실패했습니다."
+                }
+                """
+                                    ),
+                                    @ExampleObject(
+                                            name = "이메일 또는 비밀번호 오류",
+                                            summary = "이메일 또는 비밀번호가 올바르지 않음",
+                                            value = """
+                {
+                    "timestamp": "2025-06-29T12:45:01.789",
+                    "code": "AUTH-401-002",
+                    "message": "이메일 또는 비밀번호가 올바르지 않습니다."
+                }
+                """
+                                    )
+                            }
+                    )
+            )
+    })
+    @PostMapping("/login")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> login(
+            @Valid @RequestBody LocalLoginRequestDto request,
+            HttpServletResponse response
+    ) {
+        AuthResultDto authResult = authService.login(request);
+
+        // 리프레시 토큰을 쿠키로 설정
+        setRefreshTokenCookie(response, authResult.tokenPair().refreshToken());
+
+        // 액세스 토큰은 응답 바디로 반환
+        AuthResponseDto authResponseDto = AuthResponseDto.builder()
+                .accessToken(authResult.tokenPair().accessToken())
+                .user(authResult.userInfo())
+                .build();
+
+        return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
+    }
+
+
+
+    /**
+     * 리프레시 토큰으로 액세스 토큰 재발급 처리
+     *
+     * @param request HttpServletRequest - 쿠키에서 리프레시 토큰을 추출
+     * @param response 쿠키 설정을 위한 HttpServletResponse
+     * @return 새로 발급된 유저 정보가 포함된 응답
+     *
+     */
+    @Operation(
+            summary = "액세스 토큰 재발급",
+            description = "쿠키의 리프레시 토큰으로 액세스 토큰을 재발급합니다. 새로운 리프레시 토큰은 쿠키로, 액세스 토큰은 응답 바디로 반환됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "토큰 재발급 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AuthResponseDto.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "토큰 재발급 성공",
+                                            summary = "새로운 액세스 토큰과 사용자 정보 반환",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:30:00.000",
+                        "code": "200",
+                        "message": "요청이 성공적으로 처리되었습니다.",
+                        "data": {
+                            "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                            "user": {
+                                "id": 1,
+                                "email": "user@example.com",
+                                "nickname": "사용자",
+                                "isNewUser": false
+                            }
+                        }
+                    }
+                    """
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "유효하지 않은 리프레시 토큰",
+                                            summary = "쿠키의 리프레시 토큰이 유효하지 않음",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:30:00.000",
+                        "code": "AUTH-401-001",
+                        "message": "유효하지 않은 리프레시 토큰입니다."
+                    }
+                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "만료된 리프레시 토큰",
+                                            summary = "리프레시 토큰이 만료됨",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:30:00.000",
+                        "code": "AUTH-401-002",
+                        "message": "만료된 리프레시 토큰입니다."
+                    }
+                    """
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사용자 미존재",
+                                            summary = "리프레시 토큰에 해당하는 사용자가 존재하지 않음",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:30:00.000",
+                        "code": "AUTH-404-001",
+                        "message": "해당 사용자를 찾을 수 없습니다."
+                    }
+                    """
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 내부 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "서버 오류",
+                                            summary = "토큰 재발급 처리 중 서버 오류 발생",
+                                            value = """
+                    {
+                        "timestamp": "2025-06-29T12:30:00.000",
+                        "code": "AUTH-500-001",
+                        "message": "토큰 재발급 처리 중 오류가 발생했습니다."
+                    }
+                    """
+                                    )
+                            }
+                    )
+            )
+    })
+    @PostMapping("/refresh-token")
+    public ResponseEntity<BaseResponse<AuthResponseDto>> refreshAccessToken(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        AuthResultDto authResult = authService.refreshAccessToken(request);
+
+        // 리프레시 토큰을 쿠키로 설정
+        setRefreshTokenCookie(response, authResult.tokenPair().refreshToken());
+        
+        // 액세스 토큰은 응답 바디로 반환
+        AuthResponseDto authResponseDto = AuthResponseDto.builder()
+                .accessToken(authResult.tokenPair().accessToken())
+                .user(authResult.userInfo())
+                .build();
+        
+        return ResponseEntity.ok(BaseResponse.onSuccess(authResponseDto));
+    }
+
+    /**
+     * 로그아웃 API
+     * <p>
+     * - 현재 로그인된 사용자의 리프레시 토큰을 삭제하여 로그아웃을 수행합니다.
+     * - 쿠키에서 토큰을 삭제합니다.
+     **/
+    @Operation(summary = "로그아웃", description = "현재 로그인된 사용자의 리프레시 토큰을 삭제하여 로그아웃 처리합니다.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "로그아웃 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "로그아웃 성공 예시",
+                                    summary = "성공적으로 로그아웃되어 사용자 ID 반환",
+                                    value = """
+                {
+                  "timestamp": "2025-06-30T10:20:30.123",
+                  "code": "COMMON200",
+                  "message": "요청에 성공하였습니다.",
+                  "result": {
+                    "userId": 12345
+                  }
+                }
+                """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "활성 세션이 없는 상태에서 로그아웃 시도",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "활성 세션 없음",
+                                    summary = "삭제할 리프레시 토큰이 없어 활성 세션이 없다고 판단할 때 발생",
+                                    value = """
+                {
+                  "timestamp": "2025-06-30T10:25:00.000",
+                  "code": "AUTH-400-006",
+                  "message": "로그아웃할 활성 세션이 존재하지 않습니다."
+                }
+                """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 내부 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = @ExampleObject(
+                                    name = "서버 오류",
+                                    summary = "로그아웃 처리 중 서버 오류 발생",
+                                    value = """
+                {
+                  "timestamp": "2025-06-30T10:30:00.000",
+                  "code": "AUTH-500-005",
+                  "message": "로그아웃 처리 중 오류가 발생했습니다."
+                }
+                """
+                            )
+                    )
+            )
+    })
+    @PostMapping("/logout")
+    public ResponseEntity<BaseResponse<UserIdResponseDto>> logout(
+            @CurrentUser PrincipalDetails principal,
+            HttpServletResponse response
+    ) {
+        UserIdResponseDto userIdResponseDto = authService.logout(principal);
+        
+        // 쿠키에서 리프레시 토큰 삭제
+        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(cookieSecure);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(0);
+        
+        // SameSite 속성 설정
+        if (cookieSameSite != null && !cookieSameSite.isEmpty()) {
+            refreshTokenCookie.setAttribute("SameSite", cookieSameSite);
+        }
+        
+        response.addCookie(refreshTokenCookie);
+        
+        return ResponseEntity.ok(BaseResponse.onSuccess(userIdResponseDto));
+    }
+
+}

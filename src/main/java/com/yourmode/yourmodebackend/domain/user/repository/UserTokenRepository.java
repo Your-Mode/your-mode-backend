@@ -1,0 +1,13 @@
+package com.yourmode.yourmodebackend.domain.user.repository;
+
+import com.yourmode.yourmodebackend.domain.user.entity.UserToken;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface UserTokenRepository extends JpaRepository<UserToken, Integer> {
+    Optional<UserToken> findByUserId(Integer userId);
+    int deleteByUserId(Integer userId);
+}
