@@ -2,7 +2,7 @@ name: Build and Deploy on Develop
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ develop ]
     types: [ closed ]
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
       - name: Create application-prod.properties
         run: |
           cd src/main/resources
-          echo "${{ secrets.APPLICATION_PROD }}" > application-prod.yml
+          echo "${{ secrets.APPLICATION_DEV }}" > application-dev.yml
 
       # 4. gradlew 실행 권한 부여
       - name: Grant execute permission to gradlew
