@@ -2,7 +2,7 @@ name: Build and Deploy on Develop
 
 on:
   pull_request:
-    branches: [ develop ]
+    branches: [ main ]
     types: [ closed ]
 
 jobs:
@@ -22,10 +22,10 @@ jobs:
           distribution: 'temurin'
 
       # 3. application-dev.properties 생성
-      - name: Create application-dev.properties
+      - name: Create application-prod.properties
         run: |
           cd src/main/resources
-          echo "${{ secrets.APPLICATION_DEV }}" > application-dev.yml
+          echo "${{ secrets.APPLICATION_PROD }}" > application-prod.yml
 
       # 4. gradlew 실행 권한 부여
       - name: Grant execute permission to gradlew
