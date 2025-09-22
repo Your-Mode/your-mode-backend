@@ -38,7 +38,6 @@ out/
 
 # 로컬 프로파일 설정 제외
 application-dev.yml
-application-prod.yml
 
 # SSL 인증서 파일
 *.p12
