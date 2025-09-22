@@ -38,3 +38,9 @@ out/
 
 # 로컬 프로파일 설정 제외
 application-dev.yml
+
+# SSL 인증서 파일
+*.p12
+*.jks
+*.keystore
+keystore.p12
