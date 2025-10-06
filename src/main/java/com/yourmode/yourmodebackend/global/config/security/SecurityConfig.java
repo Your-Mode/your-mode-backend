@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -39,6 +40,15 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 사용 안 함
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
+                // HTTPS 보안 헤더 설정
+                .headers(headers -> headers
+                        .frameOptions().deny()
+                        .contentTypeOptions().and()
+                        .httpStrictTransportSecurity(hstsConfig -> hstsConfig
+                                .maxAgeInSeconds(31536000)
+                                .includeSubdomains(true)
+                                .preload(true))
+                        .referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 .authorizeHttpRequests(auth -> auth
                         // 인증 없이 접근 가능한 경로
                         .requestMatchers(
@@ -69,8 +79,16 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080", "https://localhost:8080", "https://yourmode.co.kr")); 
-        config.setAllowedOriginPatterns(List.of("*")); // 모든 origin 허용 (개발 환경용)
+        // HTTPS 및 HTTP origin 허용
+        config.setAllowedOrigins(List.of(
+                "http://localhost:3000", 
+                "http://localhost:8080", 
+                "https://localhost:8080", 
+                "https://localhost:3000",
+                "https://yourmode.co.kr",
+                "https://www.yourmode.co.kr",
+                "https://dev.yourmode.co.kr"
+        )); 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
