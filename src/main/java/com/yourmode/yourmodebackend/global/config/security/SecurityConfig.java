@@ -51,7 +51,8 @@ public class SecurityConfig {
                                 "/api/contents", // 컨텐츠 전체 목록 조회 - 공개 접근 가능
                                 "/api/contents/*", // 컨텐츠 상세 조회 - 공개 접근 가능
                                 "/api/contents/editor", // 에디터 컨텐츠 목록 조회 - 공개 접근 가능
-                                "/api/contents/custom" // 맞춤형 컨텐츠 목록 조회 - 공개 접근 가능
+                                "/api/contents/custom", // 맞춤형 컨텐츠 목록 조회 - 공개 접근 가능
+                                "/actuator/**" // Actuator API - 공개 접근 가능
                         ).permitAll()
                         .requestMatchers("/api/contents/my/**").authenticated() // 내 컨텐츠 조회는 인증 필요
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
