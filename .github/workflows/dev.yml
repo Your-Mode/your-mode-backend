@@ -35,7 +35,6 @@ jobs:
       - name: Build with Gradle using 'dev' profile
         run: ./gradlew build -x test -Dspring.profiles.active=dev
 
-
       # 6. 빌드 결과물 확인
       - name: List build artifacts
         run: ls -al build/libs
