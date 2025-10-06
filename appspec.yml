@@ -6,9 +6,6 @@ files:
 
 hooks:
   AfterInstall:
-    - location: scripts/download-keystore.sh
-      timeout: 60
-      runas: ubuntu
     - location: scripts/deploy.sh
       timeout: 180
       runas: ubuntu
