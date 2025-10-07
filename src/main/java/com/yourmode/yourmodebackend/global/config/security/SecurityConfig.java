@@ -87,7 +87,9 @@ public class SecurityConfig {
                 "https://localhost:3000",
                 "https://yourmode.co.kr",
                 "https://www.yourmode.co.kr",
-                "https://dev.spring.yourmode.co.kr"
+                "https://dev.spring.yourmode.co.kr",
+                "https://prod.spring.yourmode.co.kr",
+                "https://spring.yourmode.co.kr"
         )); 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
