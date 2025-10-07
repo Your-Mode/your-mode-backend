@@ -3,11 +3,15 @@ name: Build and Deploy on Production
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # PR이 머지되어 닫힌 경우에만 실행 (중복 실행 방지)
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true || github.event_name == 'push'
 
     steps:
       # 1. GitHub 레포지토리 체크아웃

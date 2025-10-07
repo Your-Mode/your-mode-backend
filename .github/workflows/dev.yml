@@ -1,6 +1,8 @@
 name: Build and Deploy on Develop
 
 on:
+  push:
+    branches: [ develop ]
   pull_request:
     branches: [ develop ]
     types: [ closed ]
@@ -8,6 +10,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # PR이 머지되어 닫힌 경우에만 실행 (중복 실행 방지)
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true || github.event_name == 'push'
 
     steps:
       # 1. GitHub 레포지토리 체크아웃
@@ -72,3 +76,9 @@ jobs:
             --s3-location bucket=${{ secrets.S3_SPRING_BUCKET }},key=your-mode/deploy/your-mode-deploy.zip,bundleType=zip \
             --deployment-config-name CodeDeployDefault.AllAtOnce \
             --file-exists-behavior OVERWRITE
+
+      # 12. 배포 상태 확인
+      - name: Check deployment status
+        run: |
+          echo "Development deployment initiated successfully!"
+          echo "Check AWS CodeDeploy console for deployment progress."
