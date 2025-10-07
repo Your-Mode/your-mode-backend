@@ -22,7 +22,7 @@ jobs:
           distribution: 'temurin'
 
       # 3. application-dev.properties 생성
-      - name: Create application-dev.properties
+      - name: Create application-prod.properties
         run: |
           cd src/main/resources
           echo "${{ secrets.APPLICATION_DEV }}" > application-dev.yml
@@ -34,7 +34,6 @@ jobs:
       # 5. Gradle 빌드 (테스트 제외, dev 프로필로)
       - name: Build with Gradle using 'dev' profile
         run: ./gradlew build -x test -Dspring.profiles.active=dev
-
 
       # 6. 빌드 결과물 확인
       - name: List build artifacts
